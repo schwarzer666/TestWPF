@@ -1,0 +1,166 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:TemperatureCharacteristics"
+                    xmlns:models="clr-namespace:TemperatureCharacteristics.Models"
+                    xmlns:converters="clr-namespace:TemperatureCharacteristics.Converters">
+	<!-- Control 派生型（TextBox, ComboBox, CheckBox, Button など）用のスタイル Labelには反映されない-->
+	<Style TargetType="Control">
+		<Setter Property="HorizontalAlignment" Value="Left"/>
+		<Setter Property="VerticalAlignment" Value="Top"/>
+		<Setter Property="FontSize" Value="12"/>
+	</Style>
+	<!--Label 用のスタイル-->
+	<Style TargetType="Label">
+		<Setter Property="HorizontalAlignment" Value="Left"/>
+		<Setter Property="VerticalAlignment" Value="Top"/>
+		<Setter Property="FontSize" Value="12"/>
+	</Style>
+	<!--ToolTip 用のスタイル-->
+	<Style TargetType="{x:Type FrameworkElement}">
+		<Setter Property="ToolTipService.InitialShowDelay" Value="0" />
+		<Setter Property="ToolTipService.ShowDuration" Value="5000" />
+	</Style>
+	<BooleanToVisibilityConverter x:Key="BooleanToVisibility"/>
+	<converters:BooleanToOppositeConverter x:Key="BooleanToOppositeConverter"/>
+	<converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+	<converters:DetectReleaseIndexToEnabledConverter x:Key="DetectReleaseIndexToEnabledConverter"/>
+	<converters:SourceFuncIndexToEnabledConverter x:Key="SourceFuncIndexToEnabledConverter"/>
+	<converters:StringToBrushConverter x:Key="StringToBrushConverter"/>
+    <converters:PresetAndTabParameterConverter x:Key="PresetAndTabParameterConverter"/>
+	<converters:RelayValueToBoolConverter x:Key="RelayConverter"/>
+	<x:Array x:Key="ComboItems_Func" Type="models:ComboItem">
+		<models:ComboItem Name="Sweep" Tag="sweep"/>
+		<models:ComboItem Name="Constant1" Tag="const"/>
+		<models:ComboItem Name="Constant2" Tag="const"/>
+		<models:ComboItem Name="Constant3" Tag="const"/>
+        <models:ComboItem Name="NotUsed" Tag="pulse"/>
+	</x:Array>
+	<x:Array x:Key="ComboItems_Mode" Type="models:ComboItem">
+		<models:ComboItem Name="V" Tag="VOLT"/>
+		<models:ComboItem Name="I" Tag="CURR"/>
+	</x:Array>
+	<x:Array x:Key="ComboItems_SourceRang" Type="models:ComboItem">
+		<models:ComboItem Name="AUTO" Tag="range0"/>
+		<models:ComboItem Name="30V" Tag="range1"/>
+		<models:ComboItem Name="10V" Tag="range1"/>
+		<models:ComboItem Name="1V" Tag="range1"/>
+		<models:ComboItem Name="100mV" Tag="range2"/>
+		<models:ComboItem Name="10mV" Tag="range2"/>
+		<models:ComboItem Name="200mA" Tag="range2"/>
+		<models:ComboItem Name="100mA" Tag="range2"/>
+		<models:ComboItem Name="10mA" Tag="range2"/>
+		<models:ComboItem Name="1mA" Tag="range2"/>
+	</x:Array>
+	<x:Array x:Key="ComboItems_MeasureRang" Type="models:ComboItem">
+		<models:ComboItem Name="AUTO" Tag="range0"/>
+		<models:ComboItem Name="1000V" Tag="range1"/>
+		<models:ComboItem Name="100V" Tag="range1"/>
+		<models:ComboItem Name="10V" Tag="range1"/>
+		<models:ComboItem Name="1V" Tag="range1"/>
+		<models:ComboItem Name="100mV" Tag="range2"/>
+		<models:ComboItem Name="3A" Tag="range1"/>
+		<models:ComboItem Name="1A" Tag="range1"/>
+		<models:ComboItem Name="100mA" Tag="range2"/>
+		<models:ComboItem Name="10mA" Tag="range2"/>
+		<models:ComboItem Name="1mA" Tag="range2"/>
+		<models:ComboItem Name="100uA" Tag="range3"/>
+	</x:Array>
+	<x:Array x:Key="ComboItems_OSCRang" Type="models:ComboItem">
+		<models:ComboItem Name="10V" Tag="range1"/>
+		<models:ComboItem Name="5V" Tag="range1"/>
+		<models:ComboItem Name="2V" Tag="range1"/>
+		<models:ComboItem Name="1V" Tag="range1"/>
+		<models:ComboItem Name="500mV" Tag="range2"/>
+		<models:ComboItem Name="200mV" Tag="range2"/>
+		<models:ComboItem Name="100mV" Tag="range2"/>
+		<models:ComboItem Name="50mV" Tag="range2"/>
+		<models:ComboItem Name="20mV" Tag="range2"/>
+	</x:Array>
+	<x:Array x:Key="ComboItems_TrigSource" Type="models:ComboItem">
+		<models:ComboItem Name="CH1" Tag="1"/>
+		<models:ComboItem Name="CH2" Tag="2"/>
+		<models:ComboItem Name="CH3" Tag="3"/>
+		<models:ComboItem Name="CH4" Tag="4"/>
+		<models:ComboItem Name="EXT" Tag="EXT"/>
+	</x:Array>
+	<x:Array x:Key="ComboItems_dmmTrigSource" Type="models:ComboItem">
+		<models:ComboItem Name="内部Trigger" Tag="IMM"/>
+		<models:ComboItem Name="バスTrigger" Tag="BUS"/>
+		<models:ComboItem Name="外部Trigger" Tag="EXT"/>
+	</x:Array>
+	<x:Array x:Key="ComboItems_Directional" Type="models:ComboItem">
+		<models:ComboItem Name="↗" Tag="rise"/>
+		<models:ComboItem Name="↘" Tag="fall"/>
+		<models:ComboItem Name="↗↘" Tag="risefall"/>
+		<models:ComboItem Name="↘↗" Tag="fallrise"/>
+	</x:Array>
+	<x:Array x:Key="ComboItems_TrigDirectional" Type="models:ComboItem">
+		<models:ComboItem Name="⤴" Tag="RISE"/>
+		<models:ComboItem Name="⤵" Tag="FALL"/>
+	</x:Array>
+	<x:Array x:Key="ComboItems_Units" Type="models:ComboItem">
+		<models:ComboItem Name="V" Tag="range1"/>
+		<models:ComboItem Name="mV" Tag="range2"/>
+		<models:ComboItem Name="A" Tag="range1"/>
+		<models:ComboItem Name="mA" Tag="range2"/>
+	</x:Array>
+	<x:Array x:Key="ComboItems_tUnits" Type="models:ComboItem">
+		<models:ComboItem Name="s" Tag="range1"/>
+		<models:ComboItem Name="ms" Tag="range2"/>
+		<models:ComboItem Name="us" Tag="range3"/>
+	</x:Array>
+	<x:Array x:Key="ComboItems_Source" Type="models:ComboItem">
+		<models:ComboItem Name="電源1" Tag="SOURCE1"/>
+		<models:ComboItem Name="電源2" Tag="SOURCE2"/>
+		<models:ComboItem Name="電源3" Tag="SOURCE3"/>
+		<models:ComboItem Name="電源4" Tag="SOURCE4"/>
+		<models:ComboItem Name=" " Tag="SOURCEnull"/>
+	</x:Array>
+	<x:Array x:Key="ComboItems_DetRelAct" Type="models:ComboItem">
+		<models:ComboItem Name="normal" Tag="ActNormal"/>
+		<models:ComboItem Name="normal+α" Tag="ActSpecial1"/>
+	</x:Array>
+	<x:Array x:Key="ComboItems_SourceLimit" Type="models:ComboItem">
+		<models:ComboItem Name="mA" Tag="range2"/>
+		<models:ComboItem Name="V" Tag="range1"/>
+	</x:Array>
+	<x:Array x:Key="ComboItems_OutputCH" Type="models:ComboItem">
+		<models:ComboItem Name="CH1" Tag="1"/>
+		<models:ComboItem Name="CH2" Tag="2"/>
+	</x:Array>
+	<x:Array x:Key="ComboItems_OutputZ" Type="models:ComboItem">
+		<models:ComboItem Name="50Ω" Tag="50"/>
+		<models:ComboItem Name="High Z" Tag="INF"/>
+	</x:Array>
+	<x:Array x:Key="ComboItems_Polarity" Type="models:ComboItem">
+		<models:ComboItem Name="Normal" Tag="NORM"/>
+		<models:ComboItem Name="Inverted" Tag="INV"/>
+	</x:Array>
+	<x:Array x:Key="ComboItems_OutputONOFF" Type="models:ComboItem">
+		<models:ComboItem Name="OFF" Tag="OFF"/>
+		<models:ComboItem Name="ON" Tag="ON"/>
+	</x:Array>
+	<x:Array x:Key="ComboItems_OSCTimeRang" Type="models:ComboItem">
+		<models:ComboItem Name="1" Tag="1"/>
+		<models:ComboItem Name="2" Tag="2"/>
+		<models:ComboItem Name="5" Tag="5"/>
+		<models:ComboItem Name="10" Tag="10"/>
+		<models:ComboItem Name="20" Tag="20"/>
+		<models:ComboItem Name="50" Tag="50"/>
+		<models:ComboItem Name="100" Tag="100"/>
+		<models:ComboItem Name="200" Tag="200"/>
+		<models:ComboItem Name="500" Tag="500"/>
+	</x:Array>
+	<x:Array x:Key="ComboItems_OSCtDivUnit" Type="models:ComboItem">
+		<models:ComboItem Name="s/div" Tag="range1"/>
+		<models:ComboItem Name="ms/div" Tag="range2"/>
+		<models:ComboItem Name="us/div" Tag="range3"/>
+		<models:ComboItem Name="ns/div" Tag="range4"/>
+	</x:Array>
+	<x:Array x:Key="ComboItems_MeasureSource" Type="models:ComboItem">
+		<models:ComboItem Name="CH1" Tag="1"/>
+		<models:ComboItem Name="CH2" Tag="2"/>
+		<models:ComboItem Name="CH3" Tag="3"/>
+		<models:ComboItem Name="CH4" Tag="4"/>
+	</x:Array>
+</ResourceDictionary>
