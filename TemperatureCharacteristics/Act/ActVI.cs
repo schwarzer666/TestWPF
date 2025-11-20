@@ -624,12 +624,12 @@ namespace VIAction
                 //*********************
                 //戻り値用データ生成
                 //*********************
-                csvRows.AddRange(deviceHeaderRows);
+                //csvRows.AddRange(deviceHeaderRows);
                 foreach (string tab in tabNames)
                 {
                     if (tab == "対象なし")
                         continue;
-                    csvRows.AddRange(measHeaderRows[tab]);
+                    //csvRows.AddRange(measHeaderRows[tab]);
                     csvRows.AddRange(resultDataRowsByTab[tab]);
                 }
                 //*********************
@@ -806,15 +806,6 @@ namespace VIAction
             List<string> instNameRow = new List<string>(new string[headers.Count]);     //ヘッダーと同じ列数で初期化
             //1列目: 空欄
             instNameRow[0] = "";
-
-            List<Device>? sourceDevices = null;     //初期化
-            (sourceDevices, bool success) = utility.FilterSettings(deviceList, "SOURCE", TabNamesText);
-
-            ////2列目: SOURCE_InstName
-            //instNameRow[1] = sourceInst.InstName ?? "";
-            //*********************
-            //暫定対策Sweep動作電源とPulseGeneratorのデータ取得をまだ作っていないので2列目:instNameRow[1]=""に変更
-            //*********************
             instNameRow[1] = "";
 
             foreach (var i in dmmIndices)

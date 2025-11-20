@@ -398,7 +398,7 @@ namespace DelayAction
                 //*********************
                 //測定器ヘッダーの生成
                 //*********************
-                await CreateInsHeaders(deviceHeaderRows, meas_inst,deviceList);
+                await CreateInsHeaders(deviceHeaderRows, meas_inst, deviceList);
                 //*********************
                 //測定項目名(tabname)毎に測定条件と測定結果ヘッダーの生成しリスト化
                 //*********************
@@ -593,12 +593,12 @@ namespace DelayAction
                 //*********************
                 //戻り値用データ生成
                 //*********************
-                csvRows.AddRange(deviceHeaderRows);
+                //csvRows.AddRange(deviceHeaderRows);
                 foreach (string tab in tabNames)
                 {
                     if (tab == "対象なし")
                         continue;
-                    csvRows.AddRange(measHeaderRows[tab]);
+                    //csvRows.AddRange(measHeaderRows[tab]);
                     csvRows.AddRange(resultDataRowsByTab[tab]);
                 }
                 //*********************
@@ -735,9 +735,6 @@ namespace DelayAction
             List<string> instNameRow = new List<string>(new string[headers.Count]);     //ヘッダーと同じ列数で初期化
             //1列目: 空欄
             instNameRow[0] = "";
-            //*********************
-            //暫定対策2列目:instNameRow[1]=""
-            //*********************
             instNameRow[1] = "";
         }
     }

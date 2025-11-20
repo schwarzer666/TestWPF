@@ -66,7 +66,6 @@ namespace ThermoAction
                 log.Add($"エラーが発生しました: {ex.Message}");
                 return (false, log);
             }
-            //await commTHERMO.THERMO_RemoteOFF(thermoId);
             return (true, log);
         }
 
@@ -76,6 +75,7 @@ namespace ThermoAction
         //機能：Thermo温度変化＋安定待ち
         //引数1：meas_inst
         //説明：
+        // 30分経過してもサーモストリーマの温度が安定しない場合タイムアウト
         //*************************************************
         public async Task<(bool Success, List<string> LogRows)> ThermoAction(
                                             List<(bool IsChecked, string UsbId, string InstName, string Identifier)> meas_inst,
@@ -102,9 +102,14 @@ namespace ThermoAction
                 log.Add("# 処理がキャンセルされました。");
                 throw;          //キャンセル要求を検知したら呼び出し元に通知
             }
+            catch (TimeoutException tex)
+            {
+                log.Add($"# 温度安定待ちタイムアウト: {tex.Message}");
+                return (false, log);
+            }
             catch (Exception ex)
             {
-                log.Add($"エラーが発生しました: {ex.Message}");
+                log.Add($"# エラーが発生しました: {ex.Message}");
                 return (false, log);
             }
             await commTHERMO.THERMO_RemoteOFF(thermoId);

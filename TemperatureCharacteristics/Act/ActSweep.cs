@@ -480,7 +480,7 @@ namespace SweepAction
             //*********************
             //ヘッダー用
             //*********************
-            List<string> deviceHeaderRows = new List<string>();                     //測定器ヘッダー
+            List<string> deviceHeaderRows = new List<string>();                     //中間データ用測定器ヘッダー
             Dictionary<string, List<string>> measHeaderRows = new Dictionary<string, List<string>>();       //タブごとの測定条件ヘッダーを辞書形式で定義
 
             try
@@ -539,11 +539,11 @@ namespace SweepAction
                 //    }
                 //}
                 //*********************
-                //測定器ヘッダーの生成
+                //中間データ用測定器ヘッダーの生成
                 //*********************
-                await CreateInsHeaders(deviceHeaderRows, meas_inst,deviceList);
+                await CreateInsHeaders(deviceHeaderRows, meas_inst, deviceList);
                 //*********************
-                //測定項目名(tabname)毎に測定条件と測定結果ヘッダーの生成しリスト化
+                //測定項目名(tabname)毎に測定条件と測定結果ヘッダーを生成しリスト化
                 //*********************
                 foreach (string tabname in tabNames)
                 {
@@ -1216,12 +1216,12 @@ namespace SweepAction
                 //*********************
                 //戻り値用データ生成
                 //*********************
-                csvRows.AddRange(deviceHeaderRows);
+                //csvRows.AddRange(deviceHeaderRows);
                 foreach (string tab in tabNames)
                 {
                     if (tab == "対象なし")
                         continue;
-                    csvRows.AddRange(measHeaderRows[tab]);
+                    //csvRows.AddRange(measHeaderRows[tab]);
                     csvRows.AddRange(resultDataRowsByTab[tab]);
                 }
                 //*********************
@@ -1512,12 +1512,6 @@ namespace SweepAction
                 d.TabSettings[TabNamesText] is SourceSettings settings &&   //TabSettings[TabNamesText]がSourceSettings型で定義されていて
                 settings.Function == "sweep")                               //Functionが"sweep"になっている
                 .ToList();                                                  //DeviceオブジェクトをList化しsweepDevicesに渡す
-            //Device? sourceInst = sweepDevices.FirstOrDefault();
-            ////2列目: SOURCE_InstName
-            //instNameRow[1] = sourceInst.InstName ?? "";
-            //*********************
-            //暫定対策Sweep動作電源とPulseGeneratorのデータ取得をまだ作っていないので2列目:instNameRow[1]=""に変更
-            //*********************
             instNameRow[1] = "";
 
 
