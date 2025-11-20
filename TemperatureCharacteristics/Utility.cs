@@ -177,43 +177,6 @@ namespace UTility
                 return;                                                         //即時タイマー完了
 
             await Task.Delay(wait_ms, cancellationToken).ConfigureAwait(false);
-            ////*********************
-            ////定義
-            ////*********************
-            //TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
-            //using System.Timers.Timer timer = new System.Timers.Timer(wait_ms)
-            //{
-            //    AutoReset = false
-            //};
-            //timer.Elapsed += (s, e) =>
-            //{
-            //    try
-            //    {
-            //        timer.Stop();
-            //        tcs.TrySetResult(true);
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        tcs.TrySetException(ex);
-            //    }
-            //};
-            //using var ctsRegistration = cancellationToken.Register(() =>
-            //{
-            //    timer.Stop();
-            //    tcs.TrySetCanceled();
-            //});
-            ////*********************
-            ////動作
-            ////*********************
-            //try
-            //{
-            //    timer.Start();
-            //}
-            //catch (Exception ex)
-            //{
-            //    tcs.TrySetException(ex);
-            //}
-            //await tcs.Task.ConfigureAwait(false);
         }
 
         //*************************************************

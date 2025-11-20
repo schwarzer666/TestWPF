@@ -783,10 +783,12 @@
 						<CheckBox 
 							Content="Debug CheckBox5(テスト表示)"/>
 						<CheckBox 
-							Content="Debug CheckBox6(テスト表示)"/>
+							Content="サーモストリーマ安定時間変更(sec)"
+							IsChecked="{Binding ThermoSoak, Mode=TwoWay}"/>
 						<TextBox 
-							x:Name="Debug_textbox1" 
-							Text="Debug Text(テスト表示)"
+							x:Name="ThermoSoakTime" 
+							Text="600"
+							IsEnabled="{Binding ThermoSoak}"
 							TextWrapping="Wrap"
 							VerticalScrollBarVisibility="Auto"/>
 						<TextBox 

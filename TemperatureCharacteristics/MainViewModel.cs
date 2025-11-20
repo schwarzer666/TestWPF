@@ -6,10 +6,10 @@ using SweepTab;                     //LayoutSweepTab.cs
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
-using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -1110,17 +1110,38 @@ namespace TemperatureCharacteristics
                     //全タブ中、測定ONにチェックの入っているタブのプロパティを取得
                     //電源がAUTOの可能性があるかチェック
                     //*********************
-                    List<string> Warnings = new List<string>();  //警告メッセージ用
+                    List<string> _warnings = new List<string>();  //警告メッセージ用
                     if (SweepTab.Tabs.Any(t => t.MeasureOn))
-                        _cachedSweepDevices = await GetDevicesAndCheckAutoInTab(measInstData, SweepTab, _sweepAct, "Sweep", Warnings);
+                        _cachedSweepDevices = await GetDevicesAndCheckAutoInTab(measInstData, SweepTab, _sweepAct, "Sweep", _warnings);
                     if (DelayTab.Tabs.Any(t => t.MeasureOn))
-                        _cachedDelayDevices = await GetDevicesAndCheckAutoInTab(measInstData, DelayTab, _delayAct, "Delay", Warnings);
+                        _cachedDelayDevices = await GetDevicesAndCheckAutoInTab(measInstData, DelayTab, _delayAct, "Delay", _warnings);
                     if (VITab.Tabs.Any(t => t.MeasureOn))
-                        _cachedVIDevices = await GetDevicesAndCheckAutoInTab(measInstData, VITab, _viAct, "VI", Warnings);
+                        _cachedVIDevices = await GetDevicesAndCheckAutoInTab(measInstData, VITab, _viAct, "VI", _warnings);
+                    //*********************
+                    //並列処理準備
+                    //*********************
+                    var tasks = new List<Task<List<Device>>>();           //並列処理Task
+                    if (SweepTab.Tabs.Any(t => t.MeasureOn))
+                        tasks.Add(GetDevicesAndCheckAutoInTab(measInstData, SweepTab, _sweepAct, "Sweep", _warnings));
+                    if (DelayTab.Tabs.Any(t => t.MeasureOn))
+                        tasks.Add(GetDevicesAndCheckAutoInTab(measInstData, DelayTab, _delayAct, "Delay", _warnings));
+                    if (VITab.Tabs.Any(t => t.MeasureOn))
+                        tasks.Add(GetDevicesAndCheckAutoInTab(measInstData, VITab, _viAct, "VI", _warnings));
+                    //*********************
+                    //並列処理実行＋結果をマッピング
+                    //*********************
+                    var results = await Task.WhenAll(tasks);
+                    int i = 0;
+                    if (SweepTab.Tabs.Any(t => t.MeasureOn))
+                        _cachedSweepDevices = results[i++];
+                    if (DelayTab.Tabs.Any(t => t.MeasureOn))
+                        _cachedDelayDevices = results[i++];
+                    if (VITab.Tabs.Any(t => t.MeasureOn))
+                        _cachedVIDevices = results[i++];
                     //*********************
                     //測定開始前確認
                     //*********************
-                    needConfirm = Warnings.Any();
+                    needConfirm = _warnings.Any();
                     if (needConfirm)
                     {
                         //UIスレッドでMessageBoxを表示するため、バックグラウンドスレッドから処理を委譲
@@ -1132,7 +1153,7 @@ namespace TemperatureCharacteristics
                             var result = MessageBox.Show(
                                 owner,
                                 $"電源のRangeがAUTOになっているItemがあります。{Environment.NewLine}" +
-                                string.Join(Environment.NewLine, Warnings) + $"{Environment.NewLine}" + $"{Environment.NewLine}" +
+                                string.Join(Environment.NewLine, _warnings) + $"{Environment.NewLine}" + $"{Environment.NewLine}" +
                                 $"Sweep電源をAUTO設定のまま開始すると印加値に影響を及ぼす可能性があります。{Environment.NewLine}" +
                                 $"このまま測定を開始しますか？",
                                 "測定開始確認",
@@ -1179,6 +1200,7 @@ namespace TemperatureCharacteristics
                             //*********************
                             //リレー動作＋測定
                             //*********************
+                            rows.Add($"サーモ 温度{targetTemp}℃");
                             await ExcuteMesurementRellayLoop(measInstData, rows, sampleCount, _cts.Token , NoConfirmCallback);
                         }
                     }
@@ -1216,7 +1238,10 @@ namespace TemperatureCharacteristics
                     string message = comments.Any()
                         ? string.Join(Environment.NewLine, comments)
                         : "測定は正常に終了";
-
+                    //*********************
+                    //最終データ追記用にフッター生成
+                    //*********************
+                    string footer = BuildSettingsFooter(measInstData);
                     //*********************
                     //コメント行（#で始まる）を除外して最終データにする
                     //*********************
@@ -1229,6 +1254,10 @@ namespace TemperatureCharacteristics
                             //最終データ保存先
                             //*********************
                             string finalFilePath = _utility.GetFinalFilePath();
+                            //*********************
+                            //フッター追加
+                            //*********************
+                            dataRows.AddRange(footer);
                             //*********************
                             //データ保存
                             //*********************
@@ -1376,6 +1405,7 @@ namespace TemperatureCharacteristics
                     //各Tab測定
                     //*********************
                     MeasurementStatus = $"Port {port} 測定中...";
+                    rows.Add($"Port{port}");
                     await MeasurementTabs(measInstData, rows, cancellationToken, confirmCallback);
                     //*********************
                     //ONしたリレーをOFF
@@ -1444,6 +1474,81 @@ namespace TemperatureCharacteristics
                 var viRows = await Task.Run(() => _viAct.VIAction(measInstData, cancellationToken, confirmCallback, _cachedVIDevices));
                 rows.AddRange(viRows);
             }
+        }
+        //****************************************************************************
+        //動作
+        // 最終データ追記用フッター生成
+        //****************************************************************************
+        private string BuildSettingsFooter(List<(bool IsChecked, string UsbId, string InstName, string Identifier)> measInst)
+        {
+            var sections = new List<string>();
+            var options = new JsonSerializerOptions { WriteIndented = true };
+
+            sections.Add($"{Environment.NewLine}===== 以下測定したタブの設定値 =====");
+            //*********************
+            //測定器リスト
+            //*********************
+            sections.Add("--- DeviceList ---");
+            var checkedDevices = measInst.Where(inst => inst.IsChecked).ToList();
+            if (checkedDevices.Count > 0)
+            {
+                var insList = CreateInsList(checkedDevices);  //measInstを直接渡してフィルタ済みリスト生成
+                sections.AddRange(insList);
+            }
+            else
+            {
+                sections.Add("No devices used.");  //デバイスなしの場合のフォールバック
+            }
+            //*********************
+            //Sweepタブ
+            //*********************
+            if (SweepTab.Tabs.Any(t => t.MeasureOn))
+            {
+                var sweepTabs = SweepTab.Tabs.Where(t => t.MeasureOn).ToArray();
+                var json = JsonSerializer.Serialize(sweepTabs, options);
+                sections.Add($"--- Sweep Settings ---{Environment.NewLine}{json}");
+            }
+            //*********************
+            //Delayタブ
+            //*********************
+            if (DelayTab.Tabs.Any(t => t.MeasureOn))
+            {
+                var delayTabs = DelayTab.Tabs.Where(t => t.MeasureOn).ToArray();
+                var json = JsonSerializer.Serialize(delayTabs, options);
+                sections.Add($"--- Delay Settings ---{Environment.NewLine}{json}");
+            }
+            //*********************
+            //VIタブ
+            //*********************
+            if (VITab.Tabs.Any(t => t.MeasureOn))
+            {
+                var viTabs = VITab.Tabs.Where(t => t.MeasureOn).ToArray();
+                var json = JsonSerializer.Serialize(viTabs, options);
+                sections.Add($"--- VI Settings ---{Environment.NewLine}{json}");
+            }
+
+            return sections.Any()
+                ? string.Join("\n", sections) + "\n"
+                : "";
+        }
+        private List<string> CreateInsList(List<(bool IsChecked, string UsbId, string InstName, string Identifier)> measInstData)
+        {
+            return measInstData
+                .Where(inst => inst.IsChecked)
+                .Select(inst => $"{inst.Identifier ?? ""},{inst.UsbId ?? ""},{inst.InstName ?? ""}")
+                .ToList();
+            //var rowsList = new List<string>();
+            //foreach (var inst in measInstData)
+            //{
+            //    var row = string.Join(",", new[]
+            //    {
+            //        inst.Identifier ?? "",
+            //        inst.UsbId ?? "",
+            //        inst.InstName ?? ""
+            //    });
+            //    rowsList.Add(row);
+            //}
+            //return rowsList;
         }
         //*************************************************
         //プロパティが変更された場合にUIを更新する
