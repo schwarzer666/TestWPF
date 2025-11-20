@@ -74,7 +74,7 @@ namespace USBcommunication
                 {
                     IO = (IMessage)rm.Open(USBID)
                 };
-                inst.IO.Timeout = 1000;
+                inst.IO.Timeout = 5000;
                 await RemoteOFF(inst);
             }
             catch (Exception ex)
@@ -104,7 +104,7 @@ namespace USBcommunication
                 {
                     IO = (IMessage)rm.Open(usbid)
                 };
-                inst.IO.Timeout = 5000;
+                inst.IO.Timeout = 10000;
                 //********
                 //cmd送信
                 //********
@@ -149,7 +149,7 @@ namespace USBcommunication
                 {
                     IO = (IMessage)rm.Open(usbid)
                 };
-                inst.IO.Timeout = 5000;
+                inst.IO.Timeout = 10000;
                 //********
                 //cmd送信
                 //********
@@ -196,7 +196,7 @@ namespace USBcommunication
                     {
                         IO = (IMessage)rm.Open(usbid)
                     };
-                    inst.IO.Timeout = 5000;
+                    inst.IO.Timeout = 10000;
                     //********
                     //cmd送信
                     //********
@@ -258,7 +258,7 @@ namespace USBcommunication
                     {
                         IO = (IMessage)rm.Open(usbid)
                     };
-                    inst.IO.Timeout = 5000;
+                    inst.IO.Timeout = 10000;
                     //********
                     //cmd送信
                     //********
@@ -319,7 +319,7 @@ namespace USBcommunication
                     {
                         IO = (IMessage)rm.Open(usbid)
                     };
-                    inst.IO.Timeout = 5000;
+                    inst.IO.Timeout = 10000;
                 }
                 catch (Exception ex)
                 {

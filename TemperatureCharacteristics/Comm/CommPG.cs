@@ -417,7 +417,7 @@ namespace PGcommunication
                     byte status = Convert.ToByte(responce);
                     compflag = (status & 0x01) == 1;                        //標準イベントレジスタbit0が1かどうか(OPC直前に投げたコマンドが完了したかどうか)
                     if (!compflag)
-                        await timer_ms.Wait_Timer(10);                     //10ms wait
+                        await timer_ms.Wait_Timer(50);                     //50ms wait
                 }
             }
             catch (Exception ex)

@@ -1010,7 +1010,8 @@ namespace OSCcommunication
                 await utility.Wait_Timer(1000);                         //1000ms wait(測定完了後
                 string command = $":MEAS:CHAN{ch}:DEL:VAL?";           //MEASURE完了後VALコマンド
                 string responce = await commQuery.Comm_queryB(usbid, command);      //リモート解除無し
-                responce = responce.Replace($":MEAS:CHAN{ch}:DEL:VAL ", "");
+                responce = responce.Replace($":MEAS:CHAN{ch}:DEL:VAL ", "");    //応答前半部分削除
+                responce = responce.Trim();                             //空白・改行コード削除
                 return responce;
             }
             catch (Exception ex)

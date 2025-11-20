@@ -58,8 +58,7 @@ namespace THERMOcommunication
                 {
                     await THERMO_Set_poin(thermoID, i.ToString());
                     await THERMO_Set_ramp(thermoID, "20.0");                    //RAMP 20℃/min
-                    //await THERMO_Set_soak(thermoID, 600);                        //Soak時間は600sで固定 debugアクセスで変更可能なように修正予定
-                    await THERMO_Set_soak(thermoID, 60);                        //Soak時間は600sで固定 debugアクセスで変更可能なように修正予定
+                    await THERMO_Set_soak(thermoID, 600);                        //Soak時間は600sで固定 debugアクセスで変更可能なように修正予定
                 }
                 cancellationToken.ThrowIfCancellationRequested();       //各種設定前にキャンセルチェック
                 await commSend.Comm_sendB(thermoID, "ULIM 150;LLIM -80");        //温度リミット設定固定 上限+150℃ 下限-80℃
@@ -90,9 +89,12 @@ namespace THERMOcommunication
         //説明：<float> 設定温度(℃)
         // -55.0～155.0
         //コメント
-        // Soak時間は600sで固定しているがdebugアクセス可能にする
+        // 30min(1800000msec)でタイムアウト
         //*************************************************
-        public async Task THERMO_WaitStability(string thermoID, float temp, CancellationToken cancellationToken = default)
+        public async Task THERMO_WaitStability(
+                                            string thermoID, float temp, 
+                                            CancellationToken cancellationToken = default,
+                                            int timeoutMs = 30 * 60 * 1000)
         {
             try
             {
@@ -106,16 +108,30 @@ namespace THERMOcommunication
                     await THERMO_Set_poin(thermoID, "1");    //SETN 1:ambient
 
                 await THERMO_Set_temp(thermoID, temp);
-                //THERMO_Set_head(usbid, "1");        //Head down
+                await THERMO_Set_head(thermoID, "1");        //Head down
+                await utility.Wait_Timer(1500, cancellationToken);  //Head Down待ち
                 await THERMO_Set_flow(thermoID, "1");        //Flow ON
+
+                var sw = System.Diagnostics.Stopwatch.StartNew();   //StopWatchスタート
 
                 while (!stability)                      //温度安定待ちポーリング
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     string response = await THERMO_Response(thermoID);
                     stability = ((Convert.ToByte(response) << 7) == 128);
-                    if (!stability)
-                        await utility.Wait_Timer(500, cancellationToken);     //500ms毎にTHERMO_Responseメソッドでレジスタ確認
-                                                                              //SOAK時間完了 温度安定待ちメッセージ
+                    if (stability)
+                        break;
+                    //*********************
+                    //30min経っても安定しない場合
+                    //*********************
+                    if (sw.ElapsedMilliseconds > timeoutMs)
+                    {
+                        await THERMO_Set_poin(thermoID, "1");
+                        await THERMO_Set_flow(thermoID, "1");
+                        throw new TimeoutException("温度が30分以内に安定しませんでした。");
+                    }
+                    await utility.Wait_Timer(500, cancellationToken);     //500ms毎にTHERMO_Responseメソッドでレジスタ確認
                 }
             }
             catch (OperationCanceledException)
