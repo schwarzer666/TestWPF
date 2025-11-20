@@ -1,0 +1,844 @@
+﻿<Window x:Class="TemperatureCharacteristics.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+        xmlns:local="clr-namespace:TemperatureCharacteristics"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        xmlns:sweeptab="clr-namespace:SweepTab"
+		xmlns:delaytab="clr-namespace:DelayTab"
+		xmlns:vitab="clr-namespace:VITab"
+		xmlns:ver="clr-namespace:VerInfo"
+		xmlns:behaviors="clr-namespace:TemperatureCharacteristics.Behaviors"
+		xmlns:converters="clr-namespace:TemperatureCharacteristics.Converters"
+		xmlns:models="clr-namespace:TemperatureCharacteristics.Models"
+        mc:Ignorable="d"
+        x:Name="MainWindowInstance"
+        d:DataContext="{d:DesignInstance Type=local:MainViewModel, IsDesignTimeCreatable=True}"
+		Title="MainWindow" Height="700" Width="1030" d:Width="1500"
+        MinWidth="800" MinHeight="400">
+	<!--d:DataContext="{d:DesignInstance Type=sweeptab:TabViewModel, IsDesignTimeCreatable=True}"-->
+	<!--↑アプリを動作させないとTabが配置されずオブジェクトの再配置がしにくいので-->
+	<!--↑デザイナーでのみ使用されるデータコンテキスト デザイナーで MainViewModel をインスタンス化可能にする。-->
+	<!--↑Height="700"はウィンドウタイトルバー(40ピクセル)も含めた高さ-->
+	<!--↑デザイン時の専用幅d:Width="1500"-->
+	<Window.Resources>
+		<ResourceDictionary>
+			<ResourceDictionary.MergedDictionaries>
+				<ResourceDictionary Source="Resources/UI/CommonResources.xaml"/>
+				<ResourceDictionary Source="Resources/UI/SweepTabContent.xaml"/>
+				<ResourceDictionary Source="Resources/UI/DelayTabContent.xaml"/>
+				<ResourceDictionary Source="Resources/UI/VITabContent.xaml"/>
+			</ResourceDictionary.MergedDictionaries>
+		</ResourceDictionary>
+	</Window.Resources>
+	<!--Debugパネル表示用-->
+	<VisualStateManager.VisualStateGroups>
+		<VisualStateGroup x:Name="WindowSizeStates">
+			<VisualState x:Name="NormalState">
+				<Storyboard>
+					<DoubleAnimation Storyboard.TargetProperty="Width" To="1030" Duration="0:0:0.3"/>
+					<ObjectAnimationUsingKeyFrames Storyboard.TargetName="DebugPanel" Storyboard.TargetProperty="Visibility">
+						<DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Collapsed}"/>
+					</ObjectAnimationUsingKeyFrames>
+				</Storyboard>
+			</VisualState>
+			<VisualState x:Name="ExpandedState">
+				<Storyboard>
+					<DoubleAnimation Storyboard.TargetProperty="Width" To="1500" Duration="0:0:0.3"/>
+					<ObjectAnimationUsingKeyFrames Storyboard.TargetName="DebugColumn" Storyboard.TargetProperty="Width">
+						<DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static GridLength.Auto}"/>
+					</ObjectAnimationUsingKeyFrames>
+					<ObjectAnimationUsingKeyFrames Storyboard.TargetName="DebugPanel" Storyboard.TargetProperty="Visibility">
+						<DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Visible}"/>
+					</ObjectAnimationUsingKeyFrames>
+				</Storyboard>
+			</VisualState>
+		</VisualStateGroup>
+	</VisualStateManager.VisualStateGroups>
+	<Grid>
+		<Grid.Resources>
+			<Style TargetType="CheckBox">
+				<Setter Property="Margin" Value="10,7,0,0"/>
+			</Style>
+			<Style TargetType="TextBox">
+				<Setter Property="Margin" Value="2"/>
+			</Style>
+		</Grid.Resources>
+		<!--Window表示幅-->
+		<Grid.ColumnDefinitions>
+			<!-- 1列目: USB ID、信号名、チェックボックス -->
+			<ColumnDefinition Width="500"/>
+			<!-- 2列目: SweepTab -->
+			<ColumnDefinition Width="500"/>
+			<!-- 3列目: デバッグパネル（初期非表示） -->
+			<!-- デザイン時の専用幅d:Width="500"-->
+			<ColumnDefinition x:Name="DebugColumn" Width="0" d:Width="500"/>
+		</Grid.ColumnDefinitions>
+
+		<!-- 1列目:入力項目 -->
+		<Grid IsEnabled="{Binding IsUiEnabled}" Grid.Row="0" Grid.Column="0">
+			<!--1列目を内部で20行×3列に分割-->
+			<Grid.RowDefinitions>
+				<RowDefinition Height="30"/>				<!-- ヘッダー -->
+				<RowDefinition Height="30"/>				<!-- 電源1 -->
+				<RowDefinition Height="30"/>				<!-- 電源2 -->
+				<RowDefinition Height="30"/>				<!-- 電源3 -->
+				<RowDefinition Height="30"/>				<!-- 電源4 -->
+				<RowDefinition Height="30"/>				<!-- OSC -->
+				<RowDefinition Height="30"/>				<!-- PG-->
+				<RowDefinition Height="30"/>				<!-- DMM1 -->
+				<RowDefinition Height="30"/>				<!-- DMM2 -->
+				<RowDefinition Height="30"/>				<!-- DMM3 -->
+				<RowDefinition Height="30"/>				<!-- DMM4 -->
+				<RowDefinition Height="30"/>				<!-- サーモ -->
+				<RowDefinition Height="30"/>				<!-- リレー -->
+				<RowDefinition Height="30"/>				<!-- ヘッダー -->
+				<RowDefinition Height="Auto"/>				<!-- ID List -->
+				<RowDefinition Height="30"/>
+				<RowDefinition Height="30"/>
+				<RowDefinition Height="30"/>
+				<RowDefinition Height="30"/>
+				<RowDefinition Height="30"/>
+			</Grid.RowDefinitions>
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="70"/>				<!-- checkbox -->
+				<ColumnDefinition Width="310*"/>			<!-- ID -->
+				<ColumnDefinition Width="80"/>				<!-- SignalName -->
+			</Grid.ColumnDefinitions>
+			<!-- 1列目内：1～13行×3列 -->
+			<!--USB ID取得ボタン-->
+			<Button
+				x:Name="Get_USBID"
+				Content="ID取得" 
+				Command="{Binding GetUSBIDCommand}"
+				Margin="5,0,2,0"
+				Grid.Row="0" Grid.Column="0"/>
+			<Label 
+                Content="USB ID (ドロップダウンリストから選択か直接入力)" 
+                Margin="0,2,0,0"
+                Grid.Row="0" Grid.Column="1"/>
+			<Label 
+				Content="Signal Name" 
+				Margin="0,2,0,0"
+                Grid.Row="0" Grid.Column="2"/>
+			<CheckBox 
+				x:Name="CheckBox_Ins1"
+				Content="電源1" 
+				Tag="{Binding Instruments[0].Tag}" 
+				IsChecked="{Binding Instruments[0].IsChecked, Mode=TwoWay}" 
+				Grid.Row="1" Grid.Column="0"/>
+			<ComboBox 
+				x:Name="TextBox_ID1" 
+				ItemsSource="{Binding USBIDList, Mode=OneWay}"
+				IsEditable="True"
+				Text="{Binding Instruments[0].UsbId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  
+				Margin="1"
+				Grid.Row="1" Grid.Column="1"/>
+			<TextBox 
+				x:Name="TextBox_Name1"
+				Text="{Binding Instruments[0].InstName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+				Grid.Row="1" Grid.Column="2"/>
+			<CheckBox 
+				x:Name="CheckBox_Ins2" 
+				Content="電源2" 
+				Tag="{Binding Instruments[1].Tag}" 
+				IsChecked="{Binding Instruments[1].IsChecked, Mode=TwoWay}" 
+				Grid.Row="2"  Grid.Column="0"/>
+			<ComboBox 
+				x:Name="TextBox_ID2" 
+				ItemsSource="{Binding USBIDList, Mode=OneWay}"
+				IsEditable="True"
+				Text="{Binding Instruments[1].UsbId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  
+                Margin="1"
+				Grid.Row="2" Grid.Column="1"/>
+			<TextBox 
+				x:Name="TextBox_Name2" 
+				Text="{Binding Instruments[1].InstName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                Grid.Row="2" Grid.Column="2"/>
+			<CheckBox 
+				x:Name="CheckBox_Ins3" 
+				Content="電源3" 
+				Tag="{Binding Instruments[2].Tag}" 
+				IsChecked="{Binding Instruments[2].IsChecked, Mode=TwoWay}" 
+				Grid.Row="3" Grid.Column="0"/>
+			<ComboBox
+				x:Name="TextBox_ID3" 
+				ItemsSource="{Binding USBIDList, Mode=OneWay}"
+				IsEditable="True"
+                Text="{Binding Instruments[2].UsbId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+				Margin="1"
+				Grid.Row="3" Grid.Column="1"/>
+			<TextBox 
+				x:Name="TextBox_Name3" 
+				Text="{Binding Instruments[2].InstName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+				Grid.Row="3" Grid.Column="2"/>
+			<CheckBox 
+				x:Name="CheckBox_Ins4" 
+				Content="電源4"
+				Tag="{Binding Instruments[3].Tag}" 
+				IsChecked="{Binding Instruments[3].IsChecked, Mode=TwoWay}" 
+				Grid.Row="4" Grid.Column="0"/>
+			<ComboBox 
+				x:Name="TextBox_ID4" 
+				ItemsSource="{Binding USBIDList, Mode=OneWay}"
+				IsEditable="True"
+                Text="{Binding Instruments[3].UsbId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  
+				Margin="1"
+				Grid.Row="4" Grid.Column="1"/>
+			<TextBox 
+				x:Name="TextBox_Name4"
+				Text="{Binding Instruments[3].InstName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+				Grid.Row="4" Grid.Column="2"/>
+			<CheckBox 
+				x:Name="CheckBox_Ins5" 
+				Content="OSC"
+				Tag="{Binding Instruments[4].Tag}" 
+				IsChecked="{Binding Instruments[4].IsChecked, Mode=TwoWay}" 
+				Grid.Row="5" Grid.Column="0"/>
+			<ComboBox 
+				x:Name="TextBox_ID5" 
+				ItemsSource="{Binding USBIDList, Mode=OneWay}"
+				IsEditable="True"
+                Text="{Binding Instruments[4].UsbId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  
+				Margin="1"
+				Grid.Row="5" Grid.Column="1"/>
+			<CheckBox 
+				x:Name="CheckBox_Ins6" 
+				Content="PG" 
+				Tag="{Binding Instruments[5].Tag}" 
+				IsChecked="{Binding Instruments[5].IsChecked, Mode=TwoWay}" 
+				Grid.Row="6" Grid.Column="0"/>
+			<ComboBox 
+				x:Name="TextBox_ID6" 
+				ItemsSource="{Binding USBIDList, Mode=OneWay}"
+				IsEditable="True"
+				Text="{Binding Instruments[5].UsbId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  
+				Margin="1"
+				Grid.Row="6" Grid.Column="1"/>
+			<CheckBox 
+				x:Name="CheckBox_Ins7" 
+				Content="DMM1"
+				Tag="{Binding Instruments[6].Tag}" 
+				IsChecked="{Binding Instruments[6].IsChecked, Mode=TwoWay}" 
+				Grid.Row="7" Grid.Column="0"/>
+			<ComboBox
+				x:Name="TextBox_ID7"
+				ItemsSource="{Binding USBIDList, Mode=OneWay}"
+				IsEditable="True"
+                Text="{Binding Instruments[6].UsbId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+				Margin="1"
+				Grid.Row="7" Grid.Column="1"/>
+			<TextBox 
+				x:Name="TextBox_Name7"
+				Text="{Binding Instruments[6].InstName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+				Grid.Row="7" Grid.Column="2"/>
+			<CheckBox 
+				x:Name="CheckBox_Ins8" 
+				Content="DMM2" 
+				Tag="{Binding Instruments[7].Tag}" 
+				IsChecked="{Binding Instruments[7].IsChecked, Mode=TwoWay}" 
+				Grid.Row="8" Grid.Column="0"/>
+			<ComboBox 
+				x:Name="TextBox_ID8" 
+				ItemsSource="{Binding USBIDList, Mode=OneWay}"
+				IsEditable="True"
+                Text="{Binding Instruments[7].UsbId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+				Margin="1"
+				Grid.Row="8" Grid.Column="1"/>
+			<TextBox
+				x:Name="TextBox_Name8"
+				Text="{Binding Instruments[7].InstName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+				Grid.Row="8" Grid.Column="2"/>
+			<CheckBox 
+				x:Name="CheckBox_Ins9" 
+				Content="DMM3"
+				Tag="{Binding Instruments[8].Tag}" 
+				IsChecked="{Binding Instruments[8].IsChecked, Mode=TwoWay}" 
+				Grid.Row="9" Grid.Column="0"/>
+			<ComboBox 
+				x:Name="TextBox_ID9" 
+				ItemsSource="{Binding USBIDList, Mode=OneWay}"
+				IsEditable="True"
+				Text="{Binding Instruments[8].UsbId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+				Margin="1"
+				Grid.Row="9" Grid.Column="1"/>
+			<TextBox 
+				x:Name="TextBox_Name9"
+				Text="{Binding Instruments[8].InstName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+				Grid.Row="9" Grid.Column="2"/>
+			<CheckBox 
+				x:Name="CheckBox_Ins10"
+				Content="DMM4"
+				Tag="{Binding Instruments[9].Tag}" 
+				IsChecked="{Binding Instruments[9].IsChecked, Mode=TwoWay}" 
+				Grid.Row="10" Grid.Column="0"/>
+			<ComboBox 
+				x:Name="TextBox_ID10"
+				ItemsSource="{Binding USBIDList, Mode=OneWay}"
+				IsEditable="True"
+                Text="{Binding Instruments[9].UsbId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+				Margin="1"
+				Grid.Row="10" Grid.Column="1"/>
+			<TextBox 
+				x:Name="TextBox_Name10"
+				Text="{Binding Instruments[9].InstName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+				Grid.Row="10" Grid.Column="2"/>
+			<CheckBox 
+				x:Name="CheckBox_Ins11"
+				Content="サーモ"
+				Tag="{Binding Instruments[10].Tag}" 
+				IsChecked="{Binding Instruments[10].IsChecked, Mode=TwoWay}" 
+				Grid.Row="11" Grid.Column="0"/>
+			<ComboBox 
+				x:Name="TextBox_ID11"
+				ItemsSource="{Binding USBIDList, Mode=OneWay}"
+				IsEditable="True"
+                Text="{Binding Instruments[10].UsbId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+				Margin="1"
+				Grid.Row="11" Grid.Column="1"/>
+			<CheckBox 
+				x:Name="CheckBox_Ins12" 
+				Content="リレー"
+				Tag="{Binding Instruments[11].Tag}" 
+				IsChecked="{Binding Instruments[11].IsChecked, Mode=TwoWay}" 
+				Grid.Row="12" Grid.Column="0"/>
+			<ComboBox
+				x:Name="TextBox_ID12" 
+				ItemsSource="{Binding FT2232HList, Mode=OneWay}"
+				IsEditable="True"
+                Text="{Binding Instruments[11].UsbId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+				Margin="1"
+				Grid.Row="12" Grid.Column="1"/>
+			<Label 
+				Content="USB ID List (選択するとクリップボードにコピー)"
+				Margin="0,5,0,0" 
+				Grid.Row="13" Grid.Column="0"
+				Grid.ColumnSpan="2"/>
+			<!--USB 接続確認ボタン 行方向跨ぎ(2行分)-->
+			<Button
+				x:Name="Conn_USBID"
+				Content="接続確認" 
+				Command="{Binding ConnectUSBIDCommand}"
+				Margin="2"
+				Width="75" 
+				Grid.Row="14" Grid.Column="2"/>
+			<ListBox 
+				x:Name="USBID_ListBox" 
+				ItemsSource="{Binding USBIDList}"
+				SelectionChanged="USBID_ListBox_SelectionChanged"
+				Height="50"
+				Margin="2"
+				Grid.Row="14" Grid.Column="0"
+				Grid.ColumnSpan="2"/>
+			<!-- 1列目内：14～18行×2列 -->
+			<Grid 
+				Grid.Row="15" Grid.Column="0"
+				 Grid.RowSpan="5" Grid.ColumnSpan="3">
+				<Grid.RowDefinitions>
+					<RowDefinition Height="30"/>
+					<RowDefinition Height="30"/>
+					<RowDefinition Height="30"/>
+					<RowDefinition Height="30"/>
+					<RowDefinition Height="30"/>
+				</Grid.RowDefinitions>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="250"/>
+					<ColumnDefinition Width="250"/>
+				</Grid.ColumnDefinitions>
+				<!--リレーマニュアルON/OFF 行方向跨ぎ(5行分)-->
+				<GroupBox
+					Header="リレーマニュアルON/OFF"
+					IsEnabled="{Binding Instruments[11].IsChecked}"
+					Height="140"
+					Width="230"
+					Margin="10,0" 
+					Grid.Row="0" Grid.Column="0" Grid.RowSpan="5">
+					<Grid>
+						<Grid.RowDefinitions>
+							<RowDefinition Height="20"/>
+							<RowDefinition Height="20"/>
+							<RowDefinition Height="20"/>
+							<RowDefinition Height="20"/>
+							<RowDefinition Height="20"/>
+							<RowDefinition Height="20"/>
+						</Grid.RowDefinitions>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="100*"/>
+							<ColumnDefinition Width="100*"/>
+						</Grid.ColumnDefinitions>
+						<RadioButton Content="リレー1" GroupName="RelayGroup" Margin="5,0" Grid.Row="0" 
+									 IsChecked="{Binding SelectedRelay, Converter={StaticResource RelayConverter}, ConverterParameter=1}"/>
+						<RadioButton Content="リレー2" GroupName="RelayGroup" Margin="5,0" Grid.Row="1" 
+									 IsChecked="{Binding SelectedRelay, Converter={StaticResource RelayConverter}, ConverterParameter=2}"/>
+						<RadioButton Content="リレー3" GroupName="RelayGroup" Margin="5,0" Grid.Row="2" 
+									 IsChecked="{Binding SelectedRelay, Converter={StaticResource RelayConverter}, ConverterParameter=3}"/>
+						<RadioButton Content="リレー4" GroupName="RelayGroup" Margin="5,0" Grid.Row="3" 
+									 IsChecked="{Binding SelectedRelay, Converter={StaticResource RelayConverter}, ConverterParameter=4}"/>
+						<RadioButton Content="リレー5" GroupName="RelayGroup" Margin="5,0" Grid.Row="4" 
+									 IsChecked="{Binding SelectedRelay, Converter={StaticResource RelayConverter}, ConverterParameter=5}"/>
+						<RadioButton Content="リレー6" GroupName="RelayGroup" Margin="5,0" Grid.Row="5" 
+									 IsChecked="{Binding SelectedRelay, Converter={StaticResource RelayConverter}, ConverterParameter=6}"/>
+						<Button 
+							Content="リレーON"
+							Command="{Binding SetRelayOnCommnad}"
+							Height="30"
+							Width="75" 
+							Margin="5,0" 
+							Grid.Row="1" Grid.Column="1" Grid.RowSpan="2"/>
+						<Button 
+							Content="全リレーOFF"
+							Command="{Binding SetRelayOffCommand}"
+							Height="30"
+							Width="75" 
+							Margin="5,0" 
+							Grid.Row="3" Grid.Column="1" Grid.RowSpan="2"/>
+					</Grid>
+				</GroupBox>
+				<!--複数個測定　行方向跨ぎ(2行分)-->
+				<GroupBox
+					Margin="0,0,2,0"
+					Grid.Row="0" Grid.Column="1"
+					Grid.RowSpan="2">
+					<GroupBox.Header>
+						<CheckBox 
+							Content="複数個測定"
+							IsEnabled="{Binding Instruments[11].IsChecked}"
+							IsChecked="{Binding MultiSample, Mode=TwoWay}"/>
+					</GroupBox.Header>
+					<Grid 
+						IsEnabled="{Binding MultiSample}">
+						<Grid.RowDefinitions>
+							<RowDefinition Height="30"/>
+							<RowDefinition Height="30"/>
+						</Grid.RowDefinitions>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="70"/>
+							<ColumnDefinition Width="*"/>
+						</Grid.ColumnDefinitions>
+						<Label
+							Content="サンプル数"
+							HorizontalAlignment="Center"
+							Margin="0"
+							Grid.Row="0" Grid.Column="0"/>
+						<ComboBox 
+							SelectedValue="{Binding SampleCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+							SelectedValuePath="Content"
+							SelectedIndex="0" 
+							Width="50"
+							Margin="2" 
+							Grid.Row="0" Grid.Column="1">
+							<ComboBoxItem Content ="1"/>
+							<ComboBoxItem Content ="2"/>
+							<ComboBoxItem Content ="3"/>
+							<ComboBoxItem Content ="4"/>
+							<ComboBoxItem Content ="5"/>
+							<ComboBoxItem Content ="6"/>
+						</ComboBox>
+					</Grid>
+				</GroupBox>
+				<!--サーモ設定温度 列方向跨ぎ(2行分)-->
+				<GroupBox
+					Margin="0,0,2,0"
+					Grid.Row="2" Grid.Column="1"
+					Grid.RowSpan="2">
+					<GroupBox.Header>
+						<CheckBox 
+							Content="Tempaerture List (コンマ区切りで入力)"
+							IsEnabled="{Binding Instruments[10].IsChecked}"
+							IsChecked="{Binding MultiTemperature, Mode=TwoWay}"/>
+					</GroupBox.Header>
+					<Grid 
+						IsEnabled="{Binding MultiTemperature}">
+						<Grid.RowDefinitions>
+							<RowDefinition Height="30"/>
+							<RowDefinition Height="30"/>
+						</Grid.RowDefinitions>
+						<Grid.ToolTip>
+							<ToolTip>
+								<TextBlock>
+								温度は順不同も可<LineBreak/>
+								空白の場合は25.0℃を設定
+								</TextBlock>
+							</ToolTip>
+						</Grid.ToolTip>
+						<TextBox
+							Text="{Binding TemperatureListText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+							TextWrapping="Wrap" 
+							Grid.Row="0" Grid.Column="0"/>
+					</Grid>
+				</GroupBox>
+				<!--バージョン情報-->
+				<TextBlock  
+				Text="{x:Static ver:VersionInfo.Version}" 
+				HorizontalAlignment="Right"
+				Margin="0,5,5,0" 
+				Grid.Row="4" Grid.Column="1"/>
+			</Grid>
+		</Grid>
+
+		<!-- 2列目:Tab -->
+		<Grid Grid.Row="0" Grid.Column="1">
+			<!--2列目を内部で3行に分割-->
+			<Grid.RowDefinitions>
+				<RowDefinition Height="25"/>			<!-- ウィンドウ拡張用チェックボックス -->
+				<RowDefinition Height="*"/>				<!-- 各親Tab -->
+				<RowDefinition Height="Auto"/>			<!-- 測定開始ボタンと全測定対象表示テキストブロック -->
+			</Grid.RowDefinitions>
+			<!--ウィンドウ拡張用チェックボックス 1行目に配置-->
+			<CheckBox 
+				x:Name="ExpandWindowCheckBox" 
+				Content="デバッグパネル表示"
+				Checked="ExpandWindowCheckBox_Checked" 
+				Unchecked="ExpandWindowCheckBox_Unchecked" 
+				Margin="350,5,0,5" 
+				Grid.Row="0"/>
+			<!--親Tab(SweepTab,DelayTab,VITab) 2行目に配置-->
+			<TabControl Grid.Row="1">
+				<!--Sweep Tab-->
+				<TabItem 
+					Header="Sweep"
+					DataContext="{Binding SweepTab}">
+					<Grid Background="LightGray">
+						<!--SweepTab内で2行に分割-->
+						<Grid.RowDefinitions>
+							<RowDefinition Height="480"/>
+							<RowDefinition Height="40"/>
+						</Grid.RowDefinitions>
+						<!--子Tab(各ItemTab) 1行目に配置-->
+						<TabControl Grid.Row="0"
+							ItemsSource="{Binding Tabs}"
+							IsEnabled="{Binding IsBigTabCtrlEnabled}"
+							SelectedIndex="0"
+							VirtualizingStackPanel.IsVirtualizing="True"
+							CacheMode="BitmapCache"
+							Loaded="TabControl_Loaded"
+							Margin="0">
+							<!--ItemTabヘッダー-->
+							<TabControl.ItemTemplate>
+								<DataTemplate>
+									<TextBlock Text="{Binding ItemHeader}"/>
+								</DataTemplate>
+							</TabControl.ItemTemplate>
+							<!--Tabコンテンツテンプレート-->
+							<!--記述量が増えたためResources/SweepTabContent.xamlにコード分割-->
+							<!--SweepTabContentTemplateでバインド-->
+							<TabControl.ContentTemplate>
+								<DataTemplate>
+									<ContentControl 
+										Content="{Binding}" 
+										ContentTemplate="{StaticResource SweepTabContentTemplate}"/>
+								</DataTemplate>
+							</TabControl.ContentTemplate>
+						</TabControl>
+						<!--測定対象表示テキストブロック 2行目に配置-->
+						<Label 
+							Content="Sweep測定" 
+							HorizontalAlignment="Left"
+							VerticalAlignment="Top"
+							Grid.Row="1"/>
+						<TextBlock  
+							Text="{Binding CheckedTabNamesText}"
+							HorizontalAlignment="Left"
+							VerticalAlignment="Top"
+							TextWrapping="Wrap" 
+							Width="400"
+							Margin="5,20,0,0"
+							Grid.Row="1"/>
+					</Grid>
+				</TabItem>
+				<!--Delay Tab-->
+				<TabItem 
+					Header="Delay"
+					DataContext="{Binding DelayTab}">
+					<Grid Background="LightGray">
+						<!--DelayTab内で2行に分割-->
+						<Grid.RowDefinitions>
+							<RowDefinition Height="500"/>
+							<RowDefinition Height="50"/>
+						</Grid.RowDefinitions>
+						<!--子Tab(各ItemTab) 1行目に配置-->
+						<TabControl Grid.Row="0"
+						ItemsSource="{Binding Tabs}"
+						IsEnabled="{Binding IsBigTabCtrlEnabled}"
+						SelectedIndex="0"
+						VirtualizingStackPanel.IsVirtualizing="True"
+						CacheMode="BitmapCache"
+						Loaded="TabControl_Loaded"
+						Margin="0">
+							<!--ItemTabヘッダー-->
+							<TabControl.ItemTemplate>
+								<DataTemplate>
+									<TextBlock Text="{Binding ItemHeader}"/>
+								</DataTemplate>
+							</TabControl.ItemTemplate>
+							<!--Tabコンテンツテンプレート-->
+							<!--記述量が増えたためResources/DelayTabContent.xamlにコード分割-->
+							<!--DelayTabContentTemplateでバインド-->
+							<TabControl.ContentTemplate>
+								<DataTemplate>
+									<ContentControl 
+										Content="{Binding}" 
+										ContentTemplate="{StaticResource DelayTabContentTemplate}"/>
+								</DataTemplate>
+							</TabControl.ContentTemplate>
+						</TabControl>
+						<!--測定対象表示テキストブロック 2行目に配置-->
+						<Label 
+							Content="Delay測定" 
+							HorizontalAlignment="Left"
+							VerticalAlignment="Top"
+							Grid.Row="1"/>
+						<TextBlock  
+							Text="{Binding CheckedTabNamesText}"
+							HorizontalAlignment="Left"
+							VerticalAlignment="Top"
+							TextWrapping="Wrap" 
+							Width="400"
+							Margin="5,20,0,0"
+							Grid.Row="1"/>
+					</Grid>
+				</TabItem>
+				<!--VI Tab-->
+				<TabItem 
+					Header="VI"
+					DataContext="{Binding VITab}">
+					<Grid Background="LightGray">
+						<!--VITab内で2行に分割-->
+						<Grid.RowDefinitions>
+							<RowDefinition Height="500"/>
+							<RowDefinition Height="50"/>
+						</Grid.RowDefinitions>
+						<!--子Tab(各ItemTab) 1行目に配置-->
+						<TabControl Grid.Row="0"
+						ItemsSource="{Binding Tabs}"
+						IsEnabled="{Binding IsBigTabCtrlEnabled}"
+						SelectedIndex="0"
+						VirtualizingStackPanel.IsVirtualizing="True"
+						CacheMode="BitmapCache"
+						Loaded="TabControl_Loaded"
+						Margin="0">
+							<!--ItemTabヘッダー-->
+							<TabControl.ItemTemplate>
+								<DataTemplate>
+									<TextBlock Text="{Binding ItemHeader}"/>
+								</DataTemplate>
+							</TabControl.ItemTemplate>
+							<!--Tabコンテンツテンプレート-->
+							<!--記述量が増えたためResources/VITabContent.xamlにコード分割-->
+							<!--VITabContentTemplateでバインド-->
+							<TabControl.ContentTemplate>
+								<DataTemplate>
+									<ContentControl 
+										Content="{Binding}" 
+										ContentTemplate="{StaticResource VITabContentTemplate}"/>
+								</DataTemplate>
+							</TabControl.ContentTemplate>
+						</TabControl>
+						<!--測定対象表示テキストブロック 2行目に配置-->
+						<Label 
+							Content="VI測定" 
+							HorizontalAlignment="Left"
+							VerticalAlignment="Top"
+							Grid.Row="1"/>
+						<TextBlock  
+							Text="{Binding CheckedTabNamesText}"
+							HorizontalAlignment="Left"
+							VerticalAlignment="Top"
+							TextWrapping="Wrap" 
+							Width="400"
+							Margin="5,20,0,0"
+							Grid.Row="1"/>
+					</Grid>
+				</TabItem>
+			</TabControl>
+			<!--測定開始ボタン 3行目に配置-->
+			<Button
+				Content="{Binding IsRunning, Converter={StaticResource BooleanToOppositeConverter}, ConverterParameter='測定開始|停止'}"
+				Command="{Binding StartMeasurementCommand}"
+				HorizontalAlignment="Left"
+				VerticalAlignment="Center"
+				Margin="390,5,0,20" 
+				Width="75" 
+				Height="30"
+				Grid.Row="2"/>
+			<!--全タブ測定対象表示テキストブロック 3行目に配置-->
+			<TextBlock  
+				Text="{Binding AllCheckedTabNamesText}"
+				HorizontalAlignment="Left"
+				VerticalAlignment="Top"
+				Margin="10,0,0,0"
+				Width="350"
+				TextWrapping="Wrap" 
+				Grid.Row="2"/>
+			<!--測定状況通知テキストブロック 3行目に配置-->
+			<TextBlock 
+				Text="{Binding MeasurementStatus}" 
+				HorizontalAlignment="Right" 
+				VerticalAlignment="Center" 
+				Margin="5,30,0,0" 
+				Width="450"
+				TextWrapping="Wrap"
+				Grid.Row="2"/>
+		</Grid>
+
+		<!-- 3列目:Debugパネル(初期非表示) -->
+		<Grid 
+			x:Name="DebugPanel"
+			Visibility="Collapsed"
+			d:Visibility="Visible" 
+			Background="LightGray"
+			Margin="10"
+			Grid.Row="0" Grid.Column="2">
+			<!--3列目を内部で20行×3列に分割-->
+			<Grid.RowDefinitions>
+				<RowDefinition Height="30"/>
+				<RowDefinition Height="30"/>
+				<RowDefinition Height="30"/>
+				<RowDefinition Height="30"/>
+				<RowDefinition Height="30"/>
+				<RowDefinition Height="30"/>
+				<RowDefinition Height="30"/>
+				<RowDefinition Height="30"/>
+				<RowDefinition Height="30"/>
+				<RowDefinition Height="30"/>
+				<RowDefinition Height="30"/>
+				<RowDefinition Height="30"/>
+				<RowDefinition Height="30"/>
+				<RowDefinition Height="30"/>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="30"/>
+				<RowDefinition Height="30"/>
+				<RowDefinition Height="30"/>
+				<RowDefinition Height="30"/>
+				<RowDefinition Height="30"/>
+			</Grid.RowDefinitions>
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="100"/>
+				<ColumnDefinition Width="100"/>
+				<ColumnDefinition Width="250"/>
+			</Grid.ColumnDefinitions>
+			<TextBox 
+				x:Name="debug_USBID" 
+				Text="{Binding DebugUSBID, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+				Margin="5,2" 
+				TextWrapping="Wrap" 
+				Grid.Row="0" Grid.Column="0"
+				Grid.ColumnSpan="2"/>
+			<TextBox 
+				x:Name="debug_send_cmd"
+				Text="{Binding DebugSendCmd, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+				Margin="5,2" 
+				TextWrapping="Wrap"  
+				Grid.Row="1" Grid.Column="0" 
+				Grid.ColumnSpan="2"/>
+			<TextBox 
+				x:Name="debug_log"
+				Text="{Binding DebugLog, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+				Margin="5,2" 
+				TextWrapping="Wrap"
+				VerticalScrollBarVisibility="Auto"
+				Grid.Row="2" Grid.Column="0" Grid.RowSpan="6">
+				<i:Interaction.Behaviors>
+					<behaviors:ScrollToEndBehavior/>
+				</i:Interaction.Behaviors>
+			</TextBox>
+			<Button 
+				x:Name="debug_send" 
+				Content="Cmd Send" 
+				Command="{Binding DebugSendCommand}"
+				Margin="5,2" 
+				Grid.Row="3" Grid.Column="1"/>
+			<Button
+				x:Name="debug_query"
+				Content="Cmd Query"
+				Command="{Binding DebugQueryCommand}"
+				Margin="5,2"
+				Grid.Row="5" Grid.Column="1"/>
+			<Button 
+				x:Name="debug_log_clear"
+				Content="Log_Clear" 
+				Command="{Binding DebugLogClearCommand}"
+				Margin="5,2" 
+				Grid.Row="7" Grid.Column="1"/>
+			<!--Debug Option群-->
+			<!--Optionの数が増えてきたら他Tabと同様分割してバインド-->
+			<Label 
+				Content="Debug Option" 
+				Grid.Row="0" Grid.Column="3"/>
+			<Grid 
+				Grid.Row="1" Grid.Column="3"
+				Grid.RowSpan="7">
+				<ScrollViewer>
+					<StackPanel>
+						<CheckBox 
+							Content="【未実装】結果ファイル出力時測定器ヘッダーを削除"/>
+						<CheckBox 
+							Content="【未実装】確認ポップアップ無視"/>
+						<CheckBox 
+							Content="【未実装】8chオシロスコープ使用"/>
+						<CheckBox 
+							Content="Debug CheckBox4(テスト表示)"/>
+						<CheckBox 
+							Content="Debug CheckBox5(テスト表示)"/>
+						<CheckBox 
+							Content="サーモストリーマ安定時間変更(sec)"
+							IsChecked="{Binding ThermoSoak, Mode=TwoWay}"/>
+						<TextBox 
+							x:Name="ThermoSoakTime" 
+							Text="600"
+							IsEnabled="{Binding ThermoSoak}"
+							TextWrapping="Wrap"
+							VerticalScrollBarVisibility="Auto"/>
+						<TextBox 
+							x:Name="Debug_textbox2" 
+							Text="Debug Text(テスト表示)"
+							TextWrapping="Wrap"
+							VerticalScrollBarVisibility="Auto"/>
+						<TextBox 
+							x:Name="Debug_textbox3" 
+							Text="Debug Text(テスト表示)"
+							TextWrapping="Wrap"
+							VerticalScrollBarVisibility="Auto"/>
+						<TextBox 
+							x:Name="Debug_textbox4" 
+							Text="Debug Text(テスト表示)"
+							TextWrapping="Wrap"
+							VerticalScrollBarVisibility="Auto"/>
+						<TextBox 
+							x:Name="Debug_textbox5" 
+							Text="Debug Text(テスト表示)"
+							TextWrapping="Wrap"
+							VerticalScrollBarVisibility="Auto"/>
+					</StackPanel>
+				</ScrollViewer>
+			</Grid>
+
+			<Button 
+				x:Name="debug_temp" 
+				Content="汎用debugButton"
+				Command="{Binding DebugTempCommand}"
+				Margin="5,2"
+				Grid.Row="9" Grid.Column="0"/>
+            <Button 
+				x:Name="debug_textbox_clear" 
+				Content="デバッグ窓クリア" 
+				Command="{Binding DebugTextboxClearCommand}"
+				Margin="5,2" 
+				Grid.Row="10" Grid.Column="0"/>
+            <TextBox 
+					x:Name="debug_textbox" 
+					Text="{Binding DebugTextBox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+					TextWrapping="Wrap"
+					VerticalScrollBarVisibility="Auto"
+					Margin="5,2"
+					Grid.Row="11" Grid.Column="0"
+					Grid.RowSpan="8" Grid.ColumnSpan="3">
+                    <i:Interaction.Behaviors>
+                        <behaviors:ScrollToEndBehavior/>
+                    </i:Interaction.Behaviors>
+                </TextBox>
+        </Grid>
+	</Grid>
+</Window>
