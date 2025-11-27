@@ -48,7 +48,7 @@ namespace THERMOcommunication
         // Soak時間は600sで固定しているがdebugアクセス可能にする
         //*************************************************
         public async Task THERMO_Initialize(string thermoID, CancellationToken cancellationToken = default,
-            string sensor = "1", string control = "1", string point = "1")
+            string soak = "600", string sensor = "1", string control = "1", string point = "1")
         {
             try
             {
@@ -58,13 +58,14 @@ namespace THERMOcommunication
                 {
                     await THERMO_Set_poin(thermoID, i.ToString());
                     await THERMO_Set_ramp(thermoID, "20.0");                    //RAMP 20℃/min
-                    await THERMO_Set_soak(thermoID, 600);                        //Soak時間は600sで固定 debugアクセスで変更可能なように修正予定
+                    await THERMO_Set_soak(thermoID, soak);                        //Soak時間は600sで固定 debugアクセスで変更可能なように修正予定
                 }
                 cancellationToken.ThrowIfCancellationRequested();       //各種設定前にキャンセルチェック
                 await commSend.Comm_sendB(thermoID, "ULIM 150;LLIM -80");        //温度リミット設定固定 上限+150℃ 下限-80℃
                 await THERMO_Set_sens(thermoID, sensor);                         //default 熱電対TypeT
                 await THERMO_Set_ctrl(thermoID, control);                        //default DUTコントロール
                 await THERMO_Set_poin(thermoID, point);                          //default ambient選択
+                await THERMO_Set_flow(thermoID, "0");                           //Flow OFF
             }
             catch (OperationCanceledException)
             {
@@ -119,7 +120,8 @@ namespace THERMOcommunication
                     cancellationToken.ThrowIfCancellationRequested();
 
                     string response = await THERMO_Response(thermoID);
-                    stability = ((Convert.ToByte(response) << 7) == 128);
+                    //stability = ((Convert.ToByte(response) << 7) == 128);
+                    stability = ((Convert.ToByte(response) & 0x01) == 1);
                     if (stability)
                         break;
                     //*********************
@@ -206,7 +208,7 @@ namespace THERMOcommunication
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"THERMO FlowOffでエラー: {ex.Message}");
+                MessageBox.Show($"# THERMO FlowOffでエラー: {ex.Message}");
             }
 
         }
@@ -230,7 +232,7 @@ namespace THERMOcommunication
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"THERMOリモート解除でエラー: {ex.Message}");
+                MessageBox.Show($"# THERMOリモート解除でエラー: {ex.Message}");
             }
 
         }
@@ -262,7 +264,7 @@ namespace THERMOcommunication
         //*************************************************
         private async Task<string> THERMO_Response(string usbid)
         {
-            string command = "TESR?";
+            string command = "TECR?";
             string responce = await commQuery.Comm_queryB(usbid, command);      //リモート解除無し
             return responce;
         }
@@ -292,12 +294,12 @@ namespace THERMOcommunication
         //説明：<string> 通信用アドレス
         // USB or GPIB
         //引数2：soak
-        //説明：<short> Soak時間(s)
+        //説明：<string> Soak時間(s)
         // 0～600
         //コメント
         // debugアクセス用にPublic
         //*************************************************
-        public async Task THERMO_Set_soak(string usbid, short soak)
+        public async Task THERMO_Set_soak(string usbid, string soak)
         {
             string command = $"SOAK {soak}";
             await commSend.Comm_sendB(usbid, command);          //リモート解除を無効にして送信

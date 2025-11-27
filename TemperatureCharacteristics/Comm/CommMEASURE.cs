@@ -83,7 +83,7 @@ namespace MEASUREcommunication
                     // Display設定
                     //**********************************
                     cancellationToken.ThrowIfCancellationRequested();       //リセット前にキャンセルチェック
-                    await MEASURE_Reset(dmmUSBID);
+                    await MEASURE_Reset(dmmUSBID, cancellationToken);
 
                     cancellationToken.ThrowIfCancellationRequested();       //各種設定前にキャンセルチェック
                     await MEASURE_Set_Function(dmmUSBID, dmmMode);
@@ -209,7 +209,7 @@ namespace MEASUREcommunication
                     //動作
                     // DMM data出力
                     //**********************************
-                    string result = await MEASURE_Read_A(dmmUSBID);
+                    string result = await MEASURE_Read_A(dmmUSBID, cancellationToken);
                     Data.AppendLine(result);
                 }
                 catch (OperationCanceledException)
@@ -250,7 +250,7 @@ namespace MEASUREcommunication
                     //動作
                     // DMM data出力
                     //**********************************
-                    string result = await MEASURE_Read_B(dmmUSBID);
+                    string result = await MEASURE_Read_B(dmmUSBID, cancellationToken);
                     Data.AppendLine(result);
                 }
                 catch (OperationCanceledException)
@@ -350,23 +350,25 @@ namespace MEASUREcommunication
         //コメント
         // 使用するときはawait演算子を付けて呼び出し
         //*************************************************
-        private async Task<bool> Complete_Check(string usbid)
+        private async Task<bool> Complete_Check(string usbid, CancellationToken ct, int maxWaitMs = 10000)
         {
             bool compflag = false;
+            var sw = System.Diagnostics.Stopwatch.StartNew();       //通信ハング時のタイムアウト用タイマー
             try
             {
-                while (!compflag)
+                while (!compflag && sw.ElapsedMilliseconds < maxWaitMs)
                 {
-                    string responce = await commQuery.Comm_queryB(usbid, "*OPC?"); //標準イベントレジスタを読み込み リモート解除なし
+                    ct.ThrowIfCancellationRequested();
+                    string responce = await commQuery.Comm_queryB(usbid, "*OPC?", ct); //標準イベントレジスタを読み込み リモート解除なし
                     byte status = Convert.ToByte(responce);
                     compflag = (status & 0x01) == 1;                        //標準イベントレジスタbit0が1かどうか(OPC直前に投げたコマンドが完了したかどうか)
                     if (!compflag)
-                        await utility.Wait_Timer(10);                     //10ms wait
+                        await utility.Wait_Timer(10, ct);                     //10ms wait
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Measureコマンド完了チェックでエラー: {ex.Message}");
+                MessageBox.Show($"# Measureコマンド完了チェックでエラー: {ex.Message}");
                 return false;                                               // エラー時はfalseを返す
             }
             return compflag;
@@ -380,19 +382,19 @@ namespace MEASUREcommunication
         //説明：<string> 通信用アドレス
         // USB or GPIB 
         //*************************************************
-        private async Task MEASURE_Reset(string usbid)
+        private async Task MEASURE_Reset(string usbid, CancellationToken ct)
         {
             string command = "*RST";
             try
             {
                 await commSend.Comm_sendB(usbid, command);      //リモート解除を無効にして送信
-                bool comp = await Complete_Check(usbid);        //直前コマンド完了チェック
+                bool comp = await Complete_Check(usbid, ct);        //直前コマンド完了チェック
                 if (!comp)
                     throw new Exception("リセット失敗");
             }
             catch (Exception ex)        //例外処理
             {
-                MessageBox.Show($"Measureリセットでエラーが発生しました: {ex.Message}");
+                MessageBox.Show($"# Measureリセットでエラーが発生しました: {ex.Message}");
             }
         }
 
@@ -532,10 +534,10 @@ namespace MEASUREcommunication
         // トリガソース設定→INITでWaitTrigger状態に遷移→*TRG→FETC?
         // FETC?"は測定メモリ内のデータを返すため、新規測定コマンドではない
         //*************************************************
-        private async Task<string> MEASURE_Read_A(string usbid)
+        private async Task<string> MEASURE_Read_A(string usbid, CancellationToken ct)
         {
             string command = "FETC?";           //測定メモリ内データをバッファに渡す
-            string responce = await commQuery.Comm_queryB(usbid, command);          //リモート解除なし
+            string responce = await commQuery.Comm_queryB(usbid, command, ct);          //リモート解除なし
             return responce;
         }
 
@@ -547,10 +549,10 @@ namespace MEASUREcommunication
         //説明：<string> 通信用アドレス
         // USB or GPIB
         //*************************************************
-        private async Task<string> MEASURE_Read_B(string usbid)
+        private async Task<string> MEASURE_Read_B(string usbid, CancellationToken ct)
         {
             string command = "READ?";           //1回測定して測定値をバッファに渡す
-            string responce = await commQuery.Comm_queryB(usbid, command);      //リモート解除なし
+            string responce = await commQuery.Comm_queryB(usbid, command, ct);      //リモート解除なし
             return responce;
         }
 

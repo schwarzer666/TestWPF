@@ -84,7 +84,7 @@ namespace OSCcommunication
                     // トリガ設定
                     //**********************************
                     cancellationToken.ThrowIfCancellationRequested();       //リセット前にキャンセルチェック
-                    await OSC_Reset(oscUSBID);
+                    await OSC_Reset(oscUSBID, cancellationToken);
 
                     cancellationToken.ThrowIfCancellationRequested();       //各種設定前にキャンセルチェック
                     await OSC_Set_ACQ(oscUSBID, recordLength);
@@ -109,7 +109,7 @@ namespace OSCcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"OSC Initializeでエラー: {ex.Message}");
+                    throw new Exception($"# OSC Initializeでエラー: {ex.Message}");
                 }
             }
         }
@@ -170,7 +170,7 @@ namespace OSCcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"OSC 未使用CH表示OFFでエラー: {ex.Message}");
+                    throw new Exception($"# OSC 未使用CH表示OFFでエラー: {ex.Message}");
                 }
             }
             return compflag;
@@ -240,7 +240,7 @@ namespace OSCcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"OSC DelayMeasure設定でエラー: {ex.Message}");
+                    throw new Exception($"# OSC DelayMeasure設定でエラー: {ex.Message}");
                 }
             }
             return compflag;
@@ -277,7 +277,7 @@ namespace OSCcommunication
                     //string? measureCh = delaySettings.DelaySetupCh;     //Delay設定CH(measure設定CH)
                     string? measureCh = oscSettings.DelaySetupCh;     //Delay設定CH(measure設定CH)
 
-                    Data = await OSC_Read_MeasureDelay(oscUSBID, measureCh);
+                    Data = await OSC_Read_MeasureDelay(oscUSBID, measureCh, cancellationToken);
                 }
                 catch (OperationCanceledException)
                 {
@@ -285,7 +285,7 @@ namespace OSCcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"DMM Data読み取りでエラー: {ex.Message}");
+                    throw new Exception($"# OSC MeasureDelay読み取りでエラー: {ex.Message}");
                 }
             }
             return Data;
@@ -328,8 +328,8 @@ namespace OSCcommunication
                 string oscUSBID = device.UsbId;
                 try
                 {
-                    compflag = await OSC_Triggered_Check(oscUSBID);
                     cancellationToken.ThrowIfCancellationRequested();       //キャンセルチェック
+                    compflag = await OSC_Triggered_Check(oscUSBID, cancellationToken);
                 }
                 catch (OperationCanceledException)
                 {
@@ -337,7 +337,7 @@ namespace OSCcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"OSC Triggerd Checkでエラー: {ex.Message}");
+                    throw new Exception($"# OSC Triggerd Checkでエラー: {ex.Message}");
                 }
             }
             return compflag;
@@ -380,9 +380,9 @@ namespace OSCcommunication
                 string oscUSBID = device.UsbId;
                 try
                 {
-                    await OSC_SINGLE(oscUSBID);
+                    await OSC_SINGLE(oscUSBID, cancellationToken);
                     cancellationToken.ThrowIfCancellationRequested();       //キャンセルチェック
-                    await OSC_SINGLEcomp_Check(oscUSBID);
+                    await OSC_SINGLEcomp_Check(oscUSBID, cancellationToken);
                 }
                 catch (OperationCanceledException)
                 {
@@ -390,7 +390,7 @@ namespace OSCcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"OSC SingleRunでエラー: {ex.Message}");
+                    throw new Exception($"# OSC SingleRunでエラー: {ex.Message}");
                 }
             }
             return compflag;
@@ -442,7 +442,7 @@ namespace OSCcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"OSC Stopでエラー: {ex.Message}");
+                    throw new Exception($"# OSC Stopでエラー: {ex.Message}");
                 }
             }
             return compflag;
@@ -493,7 +493,7 @@ namespace OSCcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"OSC Runでエラー: {ex.Message}");
+                    throw new Exception($"# OSC Runでエラー: {ex.Message}");
                 }
             }
             return compflag;
@@ -525,7 +525,7 @@ namespace OSCcommunication
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"OSCリモート解除でエラー: {ex.Message}");
+                    MessageBox.Show($"# OSCリモート解除でエラー: {ex.Message}");
                 }
             }
 
@@ -544,18 +544,18 @@ namespace OSCcommunication
         //コメント
         // 使用するときはawait演算子を付けて呼び出し
         //*************************************************
-        private async Task<bool> OSC_Triggered_Check(string usbid)
+        private async Task<bool> OSC_Triggered_Check(string usbid, CancellationToken ct)
         {
             bool compflag = false;
             try
             {
-                string responce = await OSC_Status(usbid);                  //状態レジスタ読み込み
+                string responce = await OSC_Status(usbid, ct);                  //状態レジスタ読み込み
                 ushort status = Convert.ToUInt16(responce);
                 compflag = (status & 0x0001) == 0;                          //状態レジスタbit0が0b0か判定(RUN中:1
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"OSC Trigger検出チェックでエラー: {ex.Message}");
+                MessageBox.Show($"# OSC Trigger検出チェックでエラー: {ex.Message}");
                 return false;                                               // エラー時はfalseを返す
             }
             return compflag;
@@ -572,24 +572,26 @@ namespace OSCcommunication
         //コメント
         // 使用するときはawait演算子を付けて呼び出し
         //*************************************************
-        private async Task<bool> OSC_SINGLEcomp_Check(string usbid)
+        private async Task<bool> OSC_SINGLEcomp_Check(string usbid, CancellationToken ct, int maxWaitMs = 10000)
         {
             bool compflag = false;
+            var sw = System.Diagnostics.Stopwatch.StartNew();       //通信ハング時のタイムアウト用タイマー
             try
             {
-                await utility.Wait_Timer(500);                              //初回状態レジスタ読み込み前に500ms wait
-                while (!compflag)
+                await utility.Wait_Timer(500, ct);                              //初回状態レジスタ読み込み前に500ms wait
+                while (!compflag && sw.ElapsedMilliseconds < maxWaitMs)
                 {
-                    string responce = await OSC_Status(usbid);                    //状態レジスタ読み込み
+                    ct.ThrowIfCancellationRequested();
+                    string responce = await OSC_Status(usbid, ct);                    //状態レジスタ読み込み
                     ushort status = Convert.ToUInt16(responce);
                     compflag = (status & 0x0004) == 4;                      //状態レジスタbit0とbit2が0b1か判定(RUN中:1 SINGLE中:4+1 PreTrig経過後bit2が0b1
                     if (!compflag)
-                        await utility.Wait_Timer(50);                     //50ms wait
+                        await utility.Wait_Timer(50, ct);                     //50ms wait
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"OSC SINGLE RUN完了チェックでエラー: {ex.Message}");
+                MessageBox.Show($"# OSC SINGLE RUN完了チェックでエラー: {ex.Message}");
                 return false;                                               // エラー時はfalseを返す
             }
             return compflag;
@@ -605,23 +607,25 @@ namespace OSCcommunication
         //コメント
         // 使用するときはawait演算子を付けて呼び出し
         //*************************************************
-        private async Task<bool> OSC_MEASUREcomp_Check(string usbid)
+        private async Task<bool> OSC_MEASUREcomp_Check(string usbid, CancellationToken ct, int maxWaitMs = 10000)
         {
             bool compflag = false;
+            var sw = System.Diagnostics.Stopwatch.StartNew();       //通信ハング時のタイムアウト用タイマー
             try
             {
-                while (!compflag)
+                while (!compflag && sw.ElapsedMilliseconds < maxWaitMs)
                 {
-                    string responce = await OSC_Status(usbid);                    //状態レジスタ読み込み
+                    ct.ThrowIfCancellationRequested();
+                    string responce = await OSC_Status(usbid, ct);                    //状態レジスタ読み込み
                     ushort status = Convert.ToUInt16(responce);
                     compflag = (status & 0x0080) == 0;                      //状態レジスタbit7が0b0か判定(MEASURE中:1
                     if (!compflag)
-                        await utility.Wait_Timer(10);                     //10ms wait
+                        await utility.Wait_Timer(10, ct);                     //10ms wait
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"OSC MEASURE完了チェックでエラー: {ex.Message}");
+                MessageBox.Show($"# OSC MEASURE完了チェックでエラー: {ex.Message}");
                 return false;                                               // エラー時はfalseを返す
             }
             return compflag;
@@ -637,23 +641,25 @@ namespace OSCcommunication
         //コメント
         // 使用するときはawait演算子を付けて呼び出し
         //*************************************************
-        private async Task<bool> Complete_Check(string usbid)
+        private async Task<bool> Complete_Check(string usbid, CancellationToken ct, int maxWaitMs = 10000)
         {
             bool compflag = false;
+            var sw = System.Diagnostics.Stopwatch.StartNew();       //通信ハング時のタイムアウト用タイマー
             try
             {
-                while (!compflag)
+                while (!compflag && sw.ElapsedMilliseconds < maxWaitMs)
                 {
-                    string responce = await commQuery.Comm_queryB(usbid, "*OPC?"); //標準イベントレジスタを読み込み リモート解除無し
+                    ct.ThrowIfCancellationRequested();
+                    string responce = await commQuery.Comm_queryB(usbid, "*OPC?", ct); //標準イベントレジスタを読み込み リモート解除無し
                     byte status = Convert.ToByte(responce);
                     compflag = (status & 0x01) == 1;                        //標準イベントレジスタbit0が1かどうか(OPC直前に投げたコマンドが完了したかどうか)
                     if (!compflag)
-                        await utility.Wait_Timer(10);                     //10ms wait
+                        await utility.Wait_Timer(10, ct);                     //10ms wait
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"OSCコマンド完了チェックでエラー: {ex.Message}");
+                MessageBox.Show($"# OSCコマンド完了チェックでエラー: {ex.Message}");
                 return false;                                               // エラー時はfalseを返す
             }
             return compflag;
@@ -669,19 +675,19 @@ namespace OSCcommunication
         //コメント
         // 使用するときはawait演算子を付けて呼び出し
         //*************************************************
-        private async Task OSC_Reset(string usbid)
+        private async Task OSC_Reset(string usbid, CancellationToken ct)
         {
             string command = "*RST";
             try
             {
                 await commSend.Comm_sendB(usbid, command);               //リモート解除を無効にして送信
-                bool comp = await Complete_Check(usbid);                //直前コマンド完了チェック
+                bool comp = await Complete_Check(usbid, ct);                //直前コマンド完了チェック
                 if (!comp)
                     throw new Exception("リセット失敗");
             }
             catch (Exception ex)        //例外処理
             {
-                MessageBox.Show($"OSCリセットでエラーが発生しました: {ex.Message}");
+                MessageBox.Show($"# OSCリセットでエラーが発生しました: {ex.Message}");
             }
         }
 
@@ -693,10 +699,10 @@ namespace OSCcommunication
         //説明：<string> 通信用アドレス
         // USB or GPIB
         //*************************************************
-        private async Task<string> OSC_Status(string usbid)
+        private async Task<string> OSC_Status(string usbid, CancellationToken ct)
         {
             string command = ":STAT:COND?";
-            string responce = await commQuery.Comm_queryB(usbid, command);      //リモート解除無し
+            string responce = await commQuery.Comm_queryB(usbid, command, ct);      //リモート解除無し
             return responce;
         }
 
@@ -969,10 +975,10 @@ namespace OSCcommunication
         // 直後のコマンドによってはOSCエラーコード410が発生するので
         // Comm_queryBを使用。応答は無視
         //*************************************************
-        private async Task OSC_SINGLE(string usbid)
+        private async Task OSC_SINGLE(string usbid, CancellationToken ct)
         {
             string command = ":SST? 0";
-            string responce = await commQuery.Comm_queryB(usbid, command);          //リモート解除を無効にして送信
+            string responce = await commQuery.Comm_queryB(usbid, command, ct);          //リモート解除を無効にして送信
         }
 
         //*************************************************
@@ -1002,21 +1008,21 @@ namespace OSCcommunication
         //コメント
         // 使用するときはawait演算子を付けて呼び出し
         //*************************************************
-        private async Task<string> OSC_Read_MeasureDelay(string usbid, string ch)
+        private async Task<string> OSC_Read_MeasureDelay(string usbid, string ch, CancellationToken ct)
         {
             try
             {
-                await OSC_MEASUREcomp_Check(usbid);                     //測定完了まで待機
+                await OSC_MEASUREcomp_Check(usbid, ct);                     //測定完了まで待機
                 await utility.Wait_Timer(1000);                         //1000ms wait(測定完了後
                 string command = $":MEAS:CHAN{ch}:DEL:VAL?";           //MEASURE完了後VALコマンド
-                string responce = await commQuery.Comm_queryB(usbid, command);      //リモート解除無し
+                string responce = await commQuery.Comm_queryB(usbid, command, ct);      //リモート解除無し
                 responce = responce.Replace($":MEAS:CHAN{ch}:DEL:VAL ", "");    //応答前半部分削除
                 responce = responce.Trim();                             //空白・改行コード削除
                 return responce;
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"OSC MEASUREでエラー: {ex.Message}");
+                MessageBox.Show($"# OSC MEASUREでエラー: {ex.Message}");
                 return "エラー";
             }
 

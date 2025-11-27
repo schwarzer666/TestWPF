@@ -453,7 +453,8 @@ namespace SweepAction
         //コメント
         //*************************************************
         public async Task<List<string>> SWEEPAction(
-                                            List<(bool IsChecked, string UsbId, string InstName, string Identifier)> meas_inst, 
+                                            List<(bool IsChecked, string UsbId, string InstName, string Identifier)> meas_inst,
+                                            bool _use8chOSC,
                                             CancellationToken cancellationToken = default,
                                             Func<Task<bool>>? confirmCallback = null,
                                             List<Device>? preCombinedDevices = null)
@@ -710,7 +711,8 @@ namespace SweepAction
                     if (enOsc)
                     {
                         await commOSC.OSC_Initialize(oscDevices, tabname, cancellationToken);
-                        //await commOSC.OSCUnusedChOFF(oscDevices, tabname, cancellationToken);
+                        if (_use8chOSC)
+                            await commOSC.OSCUnusedChOFF(oscDevices, tabname, cancellationToken);
                     }
                     if (enDmm)
                         await commMEASURE.MEASURE_Initialize(dmmDevices, tabname, cancellationToken);
@@ -1200,6 +1202,7 @@ namespace SweepAction
                     if (normalSweep)
                     {
                         tabCsvRows.AddRange(sweepRows);
+                        resultDataRowsByTab[tabname].AddRange("normalsweep");
                         resultDataRowsByTab[tabname].AddRange(sweepRows);
                     }
                     else

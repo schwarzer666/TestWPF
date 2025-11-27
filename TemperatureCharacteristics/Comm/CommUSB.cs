@@ -48,7 +48,7 @@ namespace USBcommunication
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"測定器通信確認エラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"# 測定器通信確認エラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
                 response = false;
             }
             return (res, response);
@@ -74,12 +74,12 @@ namespace USBcommunication
                 {
                     IO = (IMessage)rm.Open(USBID)
                 };
-                inst.IO.Timeout = 5000;
+                inst.IO.Timeout = 10000;
                 await RemoteOFF(inst);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"リモート解除でエラー: {ex.Message}");
+                MessageBox.Show($"# リモート解除でエラー: {ex.Message}");
             }
         }
 
@@ -112,7 +112,7 @@ namespace USBcommunication
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"送信コマンドエラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"# 送信コマンドエラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -157,7 +157,7 @@ namespace USBcommunication
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"送信コマンドエラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"# 送信コマンドエラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -182,41 +182,50 @@ namespace USBcommunication
         //引数2：command
         //説明：<string> 送信コマンド
         //*************************************************
-        public async Task<string> Comm_query(string usbid, string command)
+        public async Task<string> Comm_query(string usbid,
+                                                string command,
+                                                CancellationToken ct,
+                                                int ioTimeoutMs = 1000,
+                                                int maxAttempts = 10)
         {
             string response = "受信失敗";       //通信失敗しても確実に応答が返るように
+            FormattedIO488? inst = null;
             try
             {
-                try
+                //***********
+                //測定器Open
+                //***********
+                inst = new FormattedIO488
                 {
-                    //***********
-                    //測定器Open
-                    //***********
-                    inst = new FormattedIO488
+                    IO = (IMessage)rm.Open(usbid)
+                };
+                inst.IO.Timeout = ioTimeoutMs;
+                for (int attempt = 0; attempt < maxAttempts; attempt++)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    try
                     {
-                        IO = (IMessage)rm.Open(usbid)
-                    };
-                    inst.IO.Timeout = 10000;
-                    //********
-                    //cmd送信
-                    //********
-                    inst.WriteString(command, true);  //trueで終端文字を追加
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"送受信時送信コマンドエラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-                try
-                {
-                    //********
-                    //応答受信
-                    //********
-                    response = inst.ReadString();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"送受信時受信エラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                    response = "受信失敗";
+                        //********
+                        //cmd送信
+                        //********
+                        inst.WriteString(command, true);  //trueで終端文字を追加
+                        //********
+                        //応答受信
+                        //********
+                        response = inst.ReadString();
+                        return response; // 成功したら即返す
+                    }
+                    catch (Exception ex)
+                    {
+                        //最終試行なら例外を投げる
+                        if (attempt == maxAttempts - 1)
+                        {
+                            MessageBox.Show($"# 送受信エラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                            throw;
+                        }
+                        //100ms待って再試行
+                        await Task.Delay(100, ct);
+                    }
                 }
             }
             finally
@@ -244,41 +253,50 @@ namespace USBcommunication
         //引数2：command
         //説明：<string> 送信コマンド
         //*************************************************
-        public async Task<string> Comm_queryB(string usbid, string command)
+        public async Task<string> Comm_queryB(string usbid, 
+                                                string command,
+                                                CancellationToken ct, 
+                                                int ioTimeoutMs = 1000, 
+                                                int maxAttempts = 10)
         {
             string response = "受信失敗";       //通信失敗しても確実に応答が返るように
+            FormattedIO488? inst = null;
             try
             {
-                try
+                //***********
+                //測定器Open
+                //***********
+                inst = new FormattedIO488
                 {
-                    //***********
-                    //測定器Open
-                    //***********
-                    inst = new FormattedIO488
+                    IO = (IMessage)rm.Open(usbid)
+                };
+                inst.IO.Timeout = ioTimeoutMs;
+                for (int attempt = 0; attempt < maxAttempts; attempt++)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    try
                     {
-                        IO = (IMessage)rm.Open(usbid)
-                    };
-                    inst.IO.Timeout = 10000;
-                    //********
-                    //cmd送信
-                    //********
-                    inst.WriteString(command, true);  //trueで終端文字を追加
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"送受信時送信コマンドエラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-                try
-                {
-                    //********
-                    //応答受信
-                    //********
-                    response = inst.ReadString();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"送受信時受信エラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                    response = "受信失敗";
+                        //********
+                        //cmd送信
+                        //********
+                        inst.WriteString(command, true);  //trueで終端文字を追加
+                        //********
+                        //応答受信
+                        //********
+                        response = inst.ReadString();
+                        return response; // 成功したら即返す
+                    }
+                    catch (Exception ex)
+                    {
+                        //最終試行なら例外を投げる
+                        if (attempt == maxAttempts - 1)
+                        {
+                            MessageBox.Show($"# 送受信エラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                            throw;
+                        }
+                        //100ms待って再試行
+                        await Task.Delay(100, ct);
+                    }
                 }
             }
             finally
@@ -323,7 +341,7 @@ namespace USBcommunication
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"受信時測定器オープンエラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"# 受信時測定器オープンエラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 try
                 {
@@ -334,7 +352,7 @@ namespace USBcommunication
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"受信エラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"# 受信エラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
                     response = "受信失敗";
                 }
             }

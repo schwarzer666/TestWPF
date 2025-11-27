@@ -75,7 +75,7 @@ namespace SOURCEcommunication
                     // 初期値設定
                     //**********************************
                     cancellationToken.ThrowIfCancellationRequested();       //リセット前にキャンセルチェック
-                    await SOURCE_Reset(sourceUSBID);
+                    await SOURCE_Reset(sourceUSBID, cancellationToken);
 
                     cancellationToken.ThrowIfCancellationRequested();       //各種設定前にキャンセルチェック
                     await SOURCE_Set_Function(sourceUSBID, sourceMode);
@@ -242,7 +242,7 @@ namespace SOURCEcommunication
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Sourceリモート解除でエラー: {ex.Message}");
+                    MessageBox.Show($"# Sourceリモート解除でエラー: {ex.Message}");
                 }
             }
 
@@ -260,23 +260,25 @@ namespace SOURCEcommunication
         //コメント
         // 使用するときはawait演算子を付けて呼び出し
         //*************************************************
-        private async Task<bool> Complete_Check(string usbid)
+        private async Task<bool> Complete_Check(string usbid, CancellationToken ct, int maxWaitMs = 10000)
         {
             bool compflag = false;
+            var sw = System.Diagnostics.Stopwatch.StartNew();       //通信ハング時のタイムアウト用タイマー
             try
             {
-                while (!compflag)
+                while (!compflag && sw.ElapsedMilliseconds < maxWaitMs)
                 {
-                    string responce = await commQuery.Comm_queryB(usbid, "*OPC?"); //標準イベントレジスタを読み込み リモート解除無し
+                    ct.ThrowIfCancellationRequested();
+                    string responce = await commQuery.Comm_queryB(usbid, "*OPC?", ct); //標準イベントレジスタを読み込み リモート解除無し
                     byte status = Convert.ToByte(responce);
                     compflag = (status & 0x01) == 1;                        //標準イベントレジスタbit0が1かどうか(OPC直前に投げたコマンドが完了したかどうか)
                     if (!compflag)
-                        await utility.Wait_Timer(10);                     //10ms wait
+                        await utility.Wait_Timer(10, ct);                     //10ms wait
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Sourceコマンド完了チェックでエラー: {ex.Message}");
+                MessageBox.Show($"# Sourceコマンド完了チェックでエラー: {ex.Message}");
                 return false;                                               // エラー時はfalseを返す
             }
             return compflag;
@@ -292,19 +294,19 @@ namespace SOURCEcommunication
         //コメント
         // 使用するときはawait演算子を付けて呼び出し
         //*************************************************
-        private async Task SOURCE_Reset(string usbid)
+        private async Task SOURCE_Reset(string usbid, CancellationToken ct)
         {
             string command = "*RST";
             try
             {
                 await commSend.Comm_sendB(usbid, command);          //リモート解除を無効にして送信
-                bool comp = await Complete_Check(usbid);                  //直前コマンド完了チェック
+                bool comp = await Complete_Check(usbid, ct);                  //直前コマンド完了チェック
                 if (!comp)
                     throw new Exception("リセット失敗");
             }
             catch (Exception ex)        //例外処理
             {
-                MessageBox.Show($"Sourceリセットでエラーが発生しました: {ex.Message}");
+                MessageBox.Show($"# Sourceリセットでエラーが発生しました: {ex.Message}");
             }
         }
 

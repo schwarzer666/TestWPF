@@ -329,7 +329,8 @@ namespace DelayAction
         //コメント
         //*************************************************
         public async Task<List<string>> DELAYAction(
-                                            List<(bool IsChecked, string UsbId, string InstName, string Identifier)> meas_inst, 
+                                            List<(bool IsChecked, string UsbId, string InstName, string Identifier)> meas_inst,
+                                            bool _use8chOSC,
                                             CancellationToken cancellationToken = default,
                                             Func<Task<bool>>? confirmCallback = null,
                                             List<Device>? preCombinedDevices = null)
@@ -500,7 +501,8 @@ namespace DelayAction
                     //*********************
                     await commSOURCE.SOURCE_Initialize(sourceDevices, tabname, cancellationToken);
                     await commOSC.OSC_Initialize(oscDevices, tabname, cancellationToken);
-                    //await commOSC.OSCUnusedChOFF(oscDevices, tabname, cancellationToken);
+                    if(_use8chOSC)
+                        await commOSC.OSCUnusedChOFF(oscDevices, tabname, cancellationToken);
                     await commOSC.OSCmeasureSet(oscDevices, tabname, cancellationToken);
                     await commPG.PG_Initialize(pulseDevices, tabname, cancellationToken);
                     //*********************

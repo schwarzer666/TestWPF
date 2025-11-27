@@ -95,12 +95,12 @@ namespace USBID
                 }
                 if (deviceInfo.Length == 0)
                 {
-                    MessageBox.Show("IVIに対応した測定器が接続されていません");
+                    MessageBox.Show("# IVIに対応した測定器が接続されていません");
                 }
             }
             catch (Exception ex)        //例外処理
             {
-                MessageBox.Show($"USBアドレス取得エラー: {ex.Message}");
+                MessageBox.Show($"# USBアドレス取得エラー: {ex.Message}");
             }
         }
 
@@ -125,12 +125,12 @@ namespace USBID
                 }
                 if (deviceInfo.Length == 0)
                 {
-                    MessageBox.Show("GPIBに対応した測定器が接続されていません");
+                    MessageBox.Show("# GPIBに対応した測定器が接続されていません");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"GPIBアドレス取得エラー: {ex.Message}");
+                MessageBox.Show($"# GPIBアドレス取得エラー: {ex.Message}");
             }
         }
 

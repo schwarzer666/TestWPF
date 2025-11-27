@@ -10,6 +10,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -93,7 +94,7 @@ namespace TemperatureCharacteristics
             }
         }
         //*************************************************
-        //CheckBoxチェック用
+        //複数測定、温度測定CheckBoxチェック用
         //*************************************************
         private readonly Dictionary<int, Action> _instrumentCheckHandlers = new();
         private void RegisterInstrumentHandlers()
@@ -128,7 +129,6 @@ namespace TemperatureCharacteristics
         //サンプルカウント用
         //*************************************************
         private bool _multiSample;                //複数サンプル測定 CheckBox
-        //public bool MultiSample { get => _multiSample; set { _multiSample = value; OnPropertyChanged(); } }
         public bool MultiSample { get => _multiSample;
             set
             {
@@ -341,6 +341,8 @@ namespace TemperatureCharacteristics
             FT2232HList = new ObservableCollection<string>();
             DebugTextBox = string.Empty;
             DebugLog = string.Empty;
+            DebugFinalFileFotterRemove = false;
+            DebugThermoSoakTime = "600";
 
             AllCheckedTabNamesText = "対象なし";
             //**********************************
@@ -395,6 +397,12 @@ namespace TemperatureCharacteristics
             DebugTempCommand = new RelayCommandAsync(execute: async (param) => await DebugTemp(), CanExecuteCommands);
 
             MeasurementStatus = "準備完了";
+#if DEBUG
+            MultiTemperature = true;
+            MultiSample = true;
+            SampleCount = 3;
+            TemperatureListText = "25.0";
+#endif
         }
         //****************************************************************************
         //動作
@@ -1179,7 +1187,10 @@ namespace TemperatureCharacteristics
                         //*********************
                         //サーモ初期化
                         //*********************
-                        (thermoSuccess, logRows) = await _thermoAct.ThermoInitial(measInstData, _cts.Token);
+                        (thermoSuccess, logRows) = await _thermoAct.ThermoInitial(measInstData, _cts.Token, DebugThermoSoakTime);
+#if DEBUG
+                        thermoSuccess = true;
+#endif
                         if (!thermoSuccess)
                             return;
                         //*********************
@@ -1190,6 +1201,9 @@ namespace TemperatureCharacteristics
                             _cts.Token.ThrowIfCancellationRequested();  //キャンセルチェック
                             MeasurementStatus = $"サーモ 温度{targetTemp}℃ 設定+安定待ち...";
                             (thermoSuccess, logRows) = await _thermoAct.ThermoAction(measInstData, targetTemp, _cts.Token, NoConfirmCallback);
+#if DEBUG
+                            thermoSuccess = true;
+#endif
                             if (!thermoSuccess)
                             {
                                 MeasurementStatus = $"サーモ 温度{targetTemp}℃ 設定失敗";
@@ -1201,7 +1215,7 @@ namespace TemperatureCharacteristics
                             //リレー動作＋測定
                             //*********************
                             rows.Add($"サーモ 温度{targetTemp}℃");
-                            await ExcuteMesurementRellayLoop(measInstData, rows, sampleCount, _cts.Token , NoConfirmCallback);
+                            await ExcuteMesurementRellayLoop(measInstData, rows, sampleCount, DebugUse8chOSC, _cts.Token , NoConfirmCallback);
                         }
                     }
                     //*********************
@@ -1212,7 +1226,7 @@ namespace TemperatureCharacteristics
                         //*********************
                         //リレー動作＋測定
                         //*********************
-                        await ExcuteMesurementRellayLoop(measInstData, rows, sampleCount, _cts.Token , NoConfirmCallback);
+                        await ExcuteMesurementRellayLoop(measInstData, rows, sampleCount, DebugUse8chOSC, _cts.Token , NoConfirmCallback);
                     }
                 }
                 catch (OperationCanceledException)
@@ -1242,6 +1256,8 @@ namespace TemperatureCharacteristics
                     //最終データ追記用にフッター生成
                     //*********************
                     string footer = BuildSettingsFooter(measInstData);
+                    if (DebugFinalFileFotterRemove)
+                        footer = string.Empty;
                     //*********************
                     //コメント行（#で始まる）を除外して最終データにする
                     //*********************
@@ -1255,13 +1271,17 @@ namespace TemperatureCharacteristics
                             //*********************
                             string finalFilePath = _utility.GetFinalFilePath();
                             //*********************
+                            //データ並び替え
+                            //*********************
+                            var pivotRows = CreatePivotRows(dataRows, MultiTemperature, MultiSample);
+                            //*********************
                             //フッター追加
                             //*********************
-                            dataRows.AddRange(footer);
+                            pivotRows.AddRange(footer);
                             //*********************
                             //データ保存
                             //*********************
-                            await _utility.WriteCsvFileAsync(finalFilePath, dataRows, append: false, useShiftJis: true);
+                            await _utility.WriteCsvFileAsync(finalFilePath, pivotRows, append: false, useShiftJis: true);
                             message += $"{Environment.NewLine}データが {finalFilePath} に保存されました。";
                         }
                         catch (Exception ex)
@@ -1334,6 +1354,177 @@ namespace TemperatureCharacteristics
         }
         //****************************************************************************
         //動作
+        // 下記最終出力結果を並び替え
+        //----------------  ----------------
+        // 温度             項目名,温度  
+        // Sample           Sample,測定値
+        // 項目名,測定値
+        //----------------  ----------------
+        //****************************************************************************
+        private List<string> CreatePivotRows(List<string> sourceRows, bool multiTemp, bool multiSample)
+        {
+            var data = new Dictionary<(float Temp, string Item, string Port), double>();
+            var itemOrder = new List<string>();   //項目の出現順
+            var portOrder = new Dictionary<string, List<string>>(); //各項目ごとのポート順
+
+            float currentTemp = float.NaN;
+            string currentSample = "単体";
+            bool normalsweep = false;
+            //取り込み中止トリガリスト
+            //var stopTriggers = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            //    {
+            //        "=====",          // 区切り線
+            //        "設定値",          // フッター開始
+            //        "以下測定したタブの設定値",
+            //        "DeviceList",
+            //        "---",
+            //        "#"
+            //    };
+            //*********************
+            //sourceRowsからデータ取り込み
+            //*********************
+            foreach (var raw in sourceRows)
+            {
+                var line = raw.Trim();
+                if (string.IsNullOrEmpty(line)) 
+                    continue;
+                if (normalsweep)
+                    break;
+                // 停止トリガーにマッチしたら即終了（それ以降は無視）
+                //if (stopTriggers.Any(trigger => line.Contains(trigger)) ||
+                //    line.StartsWith("#") ||
+                //    line.StartsWith("---"))
+                //{
+                //    break;  // ここでループ終了
+                //}
+
+                //--- 温度行検出 ---
+                if (line.Contains("℃") && (line.StartsWith("サーモ") || line.Contains("温度")))
+                {
+                    var m = System.Text.RegularExpressions.Regex.Match(line, @"-?\d+\.?\d*");
+                    if (m.Success && float.TryParse(m.Value, out float t))
+                        currentTemp = t;
+                    continue;
+                }
+
+                //--- リレー行検出 ---
+                if (line.StartsWith("Sample"))
+                {
+                    currentSample = line.Trim();
+                    continue;
+                }
+                //--- normalsweep検出 ---
+                if (line.StartsWith("normalsweep"))
+                {
+                    normalsweep = true;
+                    continue;
+                }
+
+                //--- 測定項目行＋測定値 ---
+                if (line.Contains(','))
+                {
+                    var parts = line.Split(',');
+                    if (parts.Length >= 2 &&
+                        double.TryParse(parts[1], System.Globalization.NumberStyles.Any,
+                                       System.Globalization.CultureInfo.InvariantCulture, out double value))
+                    {
+                        string item = parts[0].Trim();
+
+                        //温度が未設定 → 単一測定 or ポートのみ → 25℃（仮）or 0 で埋める
+                        float tempToUse = float.IsNaN(currentTemp) ? 25.0f : currentTemp;
+
+                        //サンプルが未設定 → 単一測定 or 温度のみ → "単体" で統一
+                        string portToUse = string.IsNullOrEmpty(currentSample) ||
+                                            currentSample == "単体" ? "単体" : currentSample;
+
+                        //出現順を保持
+                        if (!itemOrder.Contains(item))
+                            itemOrder.Add(item);
+
+                        if (!portOrder.ContainsKey(item))
+                            portOrder[item] = new List<string>();
+                        if (!portOrder[item].Contains(portToUse))
+                            portOrder[item].Add(portToUse);
+
+                        // データ格納（温度もサンプルも必ず入る！）
+                        data[(tempToUse, item, portToUse)] = value;
+                    }
+                }
+            }
+            //*********************
+            //取り込み失敗や中止した場合、渡されたデータを返す
+            //*********************
+            if (data.Count == 0 || normalsweep) 
+                return sourceRows;
+
+            var temperatures = data.Keys.Select(k => k.Temp).Distinct().OrderBy(t => t).ToList();
+
+            var result = new List<string>();
+            //*********************
+            //温度、サンプル、項目並び替え
+            //*********************
+            if (multiTemp && multiSample)
+            {
+                //複数温度＋複数ポート
+                result.Add("項目,サンプル番号," + string.Join(",", temperatures.Select(t => $"{t}℃")));
+
+                foreach (var item in itemOrder)
+                {
+                    foreach (var port in portOrder[item])
+                    {
+                        var row = new List<string> { item, port };
+                        foreach (var temp in temperatures)
+                        {
+                            if (data.TryGetValue((temp, item, port), out double v))
+                                row.Add(v.ToString("F8"));
+                            else
+                                row.Add("");
+                        }
+                        result.Add(string.Join(",", row));
+                    }
+                }
+            }
+
+            else if (multiTemp)
+            {
+                //複数温度のみ
+                result.Add("項目," + string.Join(",", temperatures.Select(t => $"{t}℃")));
+
+                foreach (var item in itemOrder)
+                {
+                    var row = new List<string> { item };
+                    var port = portOrder[item].First(); //1つしかない
+                    foreach (var temp in temperatures)
+                        row.Add(data.TryGetValue((temp, item, port), out double v) 
+                            ? v.ToString("F8") : "");
+                    result.Add(string.Join(",", row));
+                }
+            }
+            else if (multiSample)
+            {
+                //複数ポートのみ
+                var allPorts = portOrder.Values.SelectMany(x => x).Distinct().OrderBy(x => x).ToList();
+                result.Add("項目," + string.Join(",", allPorts));
+
+                foreach (var item in itemOrder)
+                {
+                    var row = new List<string> { item };
+                    foreach (var port in allPorts)
+                        row.Add(data.TryGetValue((temperatures.First(), item, port), out double v)
+                            ? v.ToString("F8") : "");
+                    result.Add(string.Join(",", row));
+                }
+            }
+            else
+            {
+                //単一測定 ピボット不要
+                return sourceRows;
+            }
+
+            return result;
+        }
+        //****************************************************************************
+        //動作
         // 各タブプロパティ値取得＋電源Autoレンジチェック
         //****************************************************************************
         private async Task<List<Device>> GetDevicesAndCheckAutoInTab<T>(
@@ -1378,6 +1569,7 @@ namespace TemperatureCharacteristics
                                                 List<(bool, string, string, string)> measInstData, 
                                                 List<string> rows,
                                                 int? sampleCount,
+                                                bool option,
                                                 CancellationToken cancellationToken = default,
                                                 Func<Task<bool>> confirmCallback = null)
         {
@@ -1396,17 +1588,20 @@ namespace TemperatureCharacteristics
                     //リレーON
                     //*********************
                     bool relaySuccess = await SetRelayPortOnAsync(port);
+#if DEBUG
+                    relaySuccess = true;
+#endif
                     if (!relaySuccess)
                     {
-                        rows.Add($"# リレー Port {port} ON 失敗");
+                        rows.Add($"# リレー Sample {port} ON 失敗");
                         continue; //次のポートへ
                     }
                     //*********************
                     //各Tab測定
                     //*********************
-                    MeasurementStatus = $"Port {port} 測定中...";
-                    rows.Add($"Port{port}");
-                    await MeasurementTabs(measInstData, rows, cancellationToken, confirmCallback);
+                    MeasurementStatus = $"Sample {port} 測定中...";
+                    rows.Add($"Sample{port}");
+                    await MeasurementTabs(measInstData, rows, option, cancellationToken, confirmCallback);
                     //*********************
                     //ONしたリレーをOFF
                     //*********************
@@ -1422,7 +1617,8 @@ namespace TemperatureCharacteristics
                 //各Tab測定
                 //*********************
                 MeasurementStatus = "単体測定中...";
-                await MeasurementTabs(measInstData, rows, cancellationToken, confirmCallback);
+                rows.Add("単体測定");
+                await MeasurementTabs(measInstData, rows, option, cancellationToken, confirmCallback);
             }
         }
         //****************************************************************************
@@ -1432,6 +1628,7 @@ namespace TemperatureCharacteristics
         private async Task MeasurementTabs(
                                             List<(bool, string, string, string)> measInstData, 
                                             List<string> rows,
+                                            bool option,
                                             CancellationToken cancellationToken = default,
                                             Func<Task<bool>> confirmCallback = null)
         {
@@ -1445,7 +1642,7 @@ namespace TemperatureCharacteristics
                 SweepTab.IsBigTabCtrlEnabled = true;
                 SweepTab.IsSmallTabCtrlEnabled = false;
                 MeasurementStatus += "Sweep測定中...";
-                var sweepRows = await Task.Run(() => _sweepAct.SWEEPAction(measInstData, cancellationToken, confirmCallback, _cachedSweepDevices));
+                var sweepRows = await _sweepAct.SWEEPAction(measInstData, option, cancellationToken, confirmCallback, _cachedSweepDevices);
                 rows.AddRange(sweepRows);
             }
             //*********************
@@ -1458,7 +1655,7 @@ namespace TemperatureCharacteristics
                 DelayTab.IsBigTabCtrlEnabled = true;
                 DelayTab.IsSmallTabCtrlEnabled = false;
                 MeasurementStatus += "Delay測定中...";
-                var delayRows = await Task.Run(() => _delayAct.DELAYAction(measInstData, cancellationToken, confirmCallback, _cachedDelayDevices));
+                var delayRows = await _delayAct.DELAYAction(measInstData, option, cancellationToken, confirmCallback, _cachedDelayDevices);
                 rows.AddRange(delayRows);
             }
             //*********************
@@ -1471,7 +1668,7 @@ namespace TemperatureCharacteristics
                 VITab.IsBigTabCtrlEnabled = true;
                 VITab.IsSmallTabCtrlEnabled = false;
                 MeasurementStatus += "VI測定中...";
-                var viRows = await Task.Run(() => _viAct.VIAction(measInstData, cancellationToken, confirmCallback, _cachedVIDevices));
+                var viRows = await _viAct.VIAction(measInstData, cancellationToken, confirmCallback, _cachedVIDevices);
                 rows.AddRange(viRows);
             }
         }
@@ -1537,18 +1734,6 @@ namespace TemperatureCharacteristics
                 .Where(inst => inst.IsChecked)
                 .Select(inst => $"{inst.Identifier ?? ""},{inst.UsbId ?? ""},{inst.InstName ?? ""}")
                 .ToList();
-            //var rowsList = new List<string>();
-            //foreach (var inst in measInstData)
-            //{
-            //    var row = string.Join(",", new[]
-            //    {
-            //        inst.Identifier ?? "",
-            //        inst.UsbId ?? "",
-            //        inst.InstName ?? ""
-            //    });
-            //    rowsList.Add(row);
-            //}
-            //return rowsList;
         }
         //*************************************************
         //プロパティが変更された場合にUIを更新する
@@ -1569,6 +1754,14 @@ namespace TemperatureCharacteristics
         }
         //**************************************************************************************************************************
         //debug用↓
+        private bool _debugEditThermoSoak;
+        public bool DebugEditThermoSoak { get => _debugEditThermoSoak; set { if (_debugEditThermoSoak != value) { _debugEditThermoSoak = value; OnPropertyChanged(); } } }
+        private string _debugThermoSoakTime = "600";
+        public string DebugThermoSoakTime { get => _debugThermoSoakTime; set { _debugThermoSoakTime = value; OnPropertyChanged(); } }
+        private bool _debugFinalFileFotterRemove;
+        public bool DebugFinalFileFotterRemove { get => _debugFinalFileFotterRemove; set { if (_debugFinalFileFotterRemove != value) { _debugFinalFileFotterRemove = value; OnPropertyChanged(); } } }
+        private bool _debugUse8chOSC;
+        public bool DebugUse8chOSC { get => _debugUse8chOSC; set { if (_debugUse8chOSC != value) { _debugUse8chOSC = value; OnPropertyChanged(); } } }
         private async Task DebugSend()
         {
             //*********************
@@ -1588,10 +1781,10 @@ namespace TemperatureCharacteristics
             //*********************
             string usbid = DebugUSBID;
             string cmd = DebugSendCmd;
-
+            _cts = new CancellationTokenSource();
             DebugLog += $"{cmd} \n";   //送信cmdをlogに追記
                                                         //最終行(最新)を表示はXAMLで対応
-            string res = await _commQuery.Comm_query(usbid, cmd);
+            string res = await _commQuery.Comm_query(usbid, cmd, _cts.Token);
             DebugLog += $"{res} \n";   //応答をlogに追記
                                                         //最終行(最新)を表示はXAMLで対応
         }

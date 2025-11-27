@@ -85,14 +85,14 @@ namespace PGcommunication
                     // Burst設定
                     //**********************************
                     cancellationToken.ThrowIfCancellationRequested();       //リセット前にキャンセルチェック
-                    await PG_Reset(pgUSBID);
+                    await PG_Reset(pgUSBID, cancellationToken);
 
                     cancellationToken.ThrowIfCancellationRequested();       //各種設定前にキャンセルチェック
                     await PG_Set_Function(pgUSBID, pgOutCh, pgMode);        //Function
                     await PG_ChangeUnits(pgUSBID, pgOutCh);                 //CH表示単位変更
                     await PG_Set_OutputLoad(pgUSBID, pgOutCh, pgOutputZ);   //出力Z
-                    await PG_ChangePerWidt(pgUSBID, pgOutCh, pgPeriod, pgWidth);//周期変更(順番あり
-                    await PG_ChangeHighLow(pgUSBID, pgOutCh, pgHLev, pgLLev);//電圧変更(順番あり
+                    await PG_ChangePerWidt(pgUSBID, pgOutCh, pgPeriod, pgWidth, cancellationToken);//周期変更(順番あり
+                    await PG_ChangeHighLow(pgUSBID, pgOutCh, pgHLev, pgLLev, cancellationToken);//電圧変更(順番あり
                     await PG_Set_PulseEdge(pgUSBID, pgOutCh, 0.0000000033f);         //rise/fall時間=3.3ns固定
                     await PG_Set_TriggerSource(pgUSBID, pgOutCh, "BUS");     //トリガBUSトリガ固定
                     await PG_Set_SyncTrigger(pgUSBID, pgOutCh);             //SYNC出力+ソース選択(ソースは出力CHに固定
@@ -144,7 +144,7 @@ namespace PGcommunication
                     //動作
                     //**********************************
                     //await PG_Set_OutputRange(pgUSBID, pgOutCh, "OFF");
-                    await PG_ChangeHighLow(pgUSBID, pgOutCh, pgHLev, pgLLev);
+                    await PG_ChangeHighLow(pgUSBID, pgOutCh, pgHLev, pgLLev, cancellationToken);
                 }
                 catch (OperationCanceledException)
                 {
@@ -388,7 +388,7 @@ namespace PGcommunication
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"PulseGeneratorリモート解除でエラー: {ex.Message}");
+                    MessageBox.Show($"# PulseGeneratorリモート解除でエラー: {ex.Message}");
                 }
             }
 
@@ -406,23 +406,25 @@ namespace PGcommunication
         //コメント
         // 使用するときはawait演算子を付けて呼び出し
         //*************************************************
-        private async Task<bool> Complete_Check(string usbid)
+        private async Task<bool> Complete_Check(string usbid, CancellationToken ct, int maxWaitMs = 10000)
         {
             bool compflag = false;
+            var sw = System.Diagnostics.Stopwatch.StartNew();       //通信ハング時のタイムアウト用タイマー
             try
             {
-                while (!compflag)
+                while (!compflag && sw.ElapsedMilliseconds < maxWaitMs)
                 {
-                    string responce = await commQuery.Comm_queryB(usbid, "*OPC?"); //標準イベントレジスタを読み込み リモート解除無し
+                    ct.ThrowIfCancellationRequested();
+                    string responce = await commQuery.Comm_queryB(usbid, "*OPC?", ct); //標準イベントレジスタを読み込み リモート解除無し
                     byte status = Convert.ToByte(responce);
                     compflag = (status & 0x01) == 1;                        //標準イベントレジスタbit0が1かどうか(OPC直前に投げたコマンドが完了したかどうか)
                     if (!compflag)
-                        await timer_ms.Wait_Timer(50);                     //50ms wait
+                        await timer_ms.Wait_Timer(50, ct);                     //50ms wait
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"PGコマンド完了チェックでエラー: {ex.Message}");
+                MessageBox.Show($"# PGコマンド完了チェックでエラー: {ex.Message}");
                 return false;                                               // エラー時はfalseを返す
             }
             return compflag;
@@ -438,19 +440,19 @@ namespace PGcommunication
         //コメント
         // 使用するときはawait演算子を付けて呼び出し
         //*************************************************
-        private async Task PG_Reset(string usbid)
+        private async Task PG_Reset(string usbid, CancellationToken ct)
         {
             string command = "*RST";
             try
             {
                 await commSend.Comm_sendB(usbid, command);          //リモート解除を無効にして送信
-                bool comp = await Complete_Check(usbid);                  //直前コマンド完了チェック
+                bool comp = await Complete_Check(usbid, ct);                  //直前コマンド完了チェック
                 if (!comp)
                     throw new Exception("リセット失敗");
             }
             catch (Exception ex)        //例外処理
             {
-                MessageBox.Show($"PGリセットでエラーが発生しました: {ex.Message}");
+                MessageBox.Show($"# PGリセットでエラーが発生しました: {ex.Message}");
             }
         }
         //*************************************************
@@ -484,9 +486,9 @@ namespace PGcommunication
         //引数2：ch
         //説明：<double> 幅
         //*************************************************
-        private async Task PG_ChangePerWidt(string usbid, string ch, double period, double width)
+        private async Task PG_ChangePerWidt(string usbid, string ch, double period, double width, CancellationToken ct)
         {
-            string nowWidth = await PG_Read_PulseWidth(usbid, ch);
+            string nowWidth = await PG_Read_PulseWidth(usbid, ch, ct);
             if (double.Parse(nowWidth) >= period)
             {
                 //widthを先に変更
@@ -514,9 +516,9 @@ namespace PGcommunication
         //引数2：ch
         //説明：<double> Low Volt
         //*************************************************
-        private async Task PG_ChangeHighLow(string usbid, string ch, double high, double low)
+        private async Task PG_ChangeHighLow(string usbid, string ch, double high, double low, CancellationToken ct)
         {
-            string nowLow = await PG_Read_LowVolt(usbid, ch);
+            string nowLow = await PG_Read_LowVolt(usbid, ch, ct);
             if (double.Parse(nowLow) >= high)
             {
                 //lowを先に変更
@@ -581,10 +583,10 @@ namespace PGcommunication
         //説明：<string> PG設定変更対象ch
         // "1" or "2" 
         //*************************************************
-        private async Task<string> PG_Read_PulsePeriod(string usbid, string ch)
+        private async Task<string> PG_Read_PulsePeriod(string usbid, string ch, CancellationToken ct)
         {
             string command = $"SOUR{ch}:FUNC:PULS:PER?";
-            string responce = await commQuery.Comm_queryB(usbid, command);      //リモート解除無し
+            string responce = await commQuery.Comm_queryB(usbid, command, ct);      //リモート解除無し
             return responce;
         }
 
@@ -619,10 +621,10 @@ namespace PGcommunication
         //説明：<string> PG設定変更対象ch
         // "1" or "2" 
         //*************************************************
-        private async Task<string> PG_Read_PulseWidth(string usbid, string ch)
+        private async Task<string> PG_Read_PulseWidth(string usbid, string ch, CancellationToken ct)
         {
             string command = $"SOUR{ch}:FUNC:PULS:WIDT?";
-            string responce = await commQuery.Comm_queryB(usbid, command);      //リモート解除無し
+            string responce = await commQuery.Comm_queryB(usbid, command, ct);      //リモート解除無し
             return responce;
         }
 
@@ -703,10 +705,10 @@ namespace PGcommunication
         //説明：<string> PG設定変更対象ch
         // "1" or "2" 
         //*************************************************
-        private async Task<string> PG_Read_HighVolt(string usbid, string ch)
+        private async Task<string> PG_Read_HighVolt(string usbid, string ch, CancellationToken ct)
         {
             string command = $"SOUR{ch}:VOLT:HIGH?";
-            string responce = await commQuery.Comm_queryB(usbid, command);      //リモート解除無し
+            string responce = await commQuery.Comm_queryB(usbid, command, ct);      //リモート解除無し
             return responce;
         }
         //*************************************************
@@ -720,10 +722,10 @@ namespace PGcommunication
         //説明：<string> PG設定変更対象ch
         // "1" or "2" 
         //*************************************************
-        private async Task<string> PG_Read_LowVolt(string usbid, string ch)
+        private async Task<string> PG_Read_LowVolt(string usbid, string ch, CancellationToken ct)
         {
             string command = $"SOUR{ch}:VOLT:LOW?";
-            string responce = await commQuery.Comm_queryB(usbid, command);      //リモート解除無し
+            string responce = await commQuery.Comm_queryB(usbid, command, ct);      //リモート解除無し
             return responce;
         }
         //*************************************************

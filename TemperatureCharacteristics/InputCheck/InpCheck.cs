@@ -63,7 +63,7 @@ namespace InputCheck
                     //*********************
                     //2. 各測定器アドレスが有効かどうか
                     //*********************
-                    if (device.Identifier != "RELAY") //リレー用アドレス以外をチェック
+                    if (device.Identifier != "リレー") //リレー用アドレス以外をチェック
                     {
                         var (msgFind, okFind) = _commonChecker.CheckFindString(device.UsbId, $"{device.Identifier}のアドレス", requiredStrings, true, false);
                         errMessage.AddRange(msgFind); isVerify &= okFind;

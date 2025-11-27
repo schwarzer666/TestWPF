@@ -40,6 +40,7 @@ namespace ThermoAction
         public async Task<(bool Success, List<string> LogRows)> ThermoInitial(
                                             List<(bool IsChecked, string UsbId, string InstName, string Identifier)> meas_inst,
                                             CancellationToken cancellationToken = default,
+                                            string soakTime = "600",
                                             Func<Task<bool>>? confirmCallback = null)
         {
             cancellationToken.ThrowIfCancellationRequested();       //キャンセルチェック
@@ -54,7 +55,7 @@ namespace ThermoAction
             }
             try
             {
-                await commTHERMO.THERMO_Initialize(thermoId, cancellationToken);
+                await commTHERMO.THERMO_Initialize(thermoId, cancellationToken, soakTime);
             }
             catch (OperationCanceledException)
             {
