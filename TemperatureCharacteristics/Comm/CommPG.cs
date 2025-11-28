@@ -93,7 +93,8 @@ namespace PGcommunication
                     await PG_Set_OutputLoad(pgUSBID, pgOutCh, pgOutputZ);   //出力Z
                     await PG_ChangePerWidt(pgUSBID, pgOutCh, pgPeriod, pgWidth, cancellationToken);//周期変更(順番あり
                     await PG_ChangeHighLow(pgUSBID, pgOutCh, pgHLev, pgLLev, cancellationToken);//電圧変更(順番あり
-                    await PG_Set_PulseEdge(pgUSBID, pgOutCh, 0.0000000033f);         //rise/fall時間=3.3ns固定
+                    //await PG_Set_PulseEdge(pgUSBID, pgOutCh, 0.0000000033f);         //rise/fall時間=3.3ns固定
+                    await PG_Set_PulseEdge(pgUSBID, pgOutCh, 0.000000010f);         //rise/fall時間=10.0ns固定
                     await PG_Set_TriggerSource(pgUSBID, pgOutCh, "BUS");     //トリガBUSトリガ固定
                     await PG_Set_SyncTrigger(pgUSBID, pgOutCh);             //SYNC出力+ソース選択(ソースは出力CHに固定
                     await PG_Set_TriggerOUT(pgUSBID, pgOutCh, pgTrigOUT);   //トリガ出力設定（出力する場合立ち上がりエッジのみ

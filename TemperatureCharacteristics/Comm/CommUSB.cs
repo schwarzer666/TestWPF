@@ -184,7 +184,6 @@ namespace USBcommunication
         //*************************************************
         public async Task<string> Comm_query(string usbid,
                                                 string command,
-                                                CancellationToken ct,
                                                 int ioTimeoutMs = 1000,
                                                 int maxAttempts = 10)
         {
@@ -202,7 +201,6 @@ namespace USBcommunication
                 inst.IO.Timeout = ioTimeoutMs;
                 for (int attempt = 0; attempt < maxAttempts; attempt++)
                 {
-                    ct.ThrowIfCancellationRequested();
                     try
                     {
                         //********
@@ -224,7 +222,7 @@ namespace USBcommunication
                             throw;
                         }
                         //100ms待って再試行
-                        await Task.Delay(100, ct);
+                        await Task.Delay(100);
                     }
                 }
             }
@@ -255,7 +253,7 @@ namespace USBcommunication
         //*************************************************
         public async Task<string> Comm_queryB(string usbid, 
                                                 string command,
-                                                CancellationToken ct, 
+                                                CancellationToken cancellationToken, 
                                                 int ioTimeoutMs = 1000, 
                                                 int maxAttempts = 10)
         {
@@ -273,7 +271,7 @@ namespace USBcommunication
                 inst.IO.Timeout = ioTimeoutMs;
                 for (int attempt = 0; attempt < maxAttempts; attempt++)
                 {
-                    ct.ThrowIfCancellationRequested();
+                    cancellationToken.ThrowIfCancellationRequested();
                     try
                     {
                         //********
@@ -295,7 +293,7 @@ namespace USBcommunication
                             throw;
                         }
                         //100ms待って再試行
-                        await Task.Delay(100, ct);
+                        await Task.Delay(100, cancellationToken);
                     }
                 }
             }

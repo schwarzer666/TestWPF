@@ -397,12 +397,12 @@ namespace TemperatureCharacteristics
             DebugTempCommand = new RelayCommandAsync(execute: async (param) => await DebugTemp(), CanExecuteCommands);
 
             MeasurementStatus = "準備完了";
-#if DEBUG
-            MultiTemperature = true;
-            MultiSample = true;
-            SampleCount = 3;
-            TemperatureListText = "25.0";
-#endif
+//#if DEBUG
+//            MultiTemperature = true;
+//            MultiSample = true;
+//            SampleCount = 3;
+//            TemperatureListText = "25.0";
+//#endif
         }
         //****************************************************************************
         //動作
@@ -768,6 +768,10 @@ namespace TemperatureCharacteristics
             {
                 MeasurementStatus = $"リレー制御エラー: {ex.Message}";
                 return false;
+            }
+            finally
+            {
+                _bitBang.Dispose();
             }
         }
         //****************************************************************************
@@ -1188,9 +1192,9 @@ namespace TemperatureCharacteristics
                         //サーモ初期化
                         //*********************
                         (thermoSuccess, logRows) = await _thermoAct.ThermoInitial(measInstData, _cts.Token, DebugThermoSoakTime);
-#if DEBUG
-                        thermoSuccess = true;
-#endif
+//#if DEBUG
+//                        thermoSuccess = true;
+//#endif
                         if (!thermoSuccess)
                             return;
                         //*********************
@@ -1201,9 +1205,9 @@ namespace TemperatureCharacteristics
                             _cts.Token.ThrowIfCancellationRequested();  //キャンセルチェック
                             MeasurementStatus = $"サーモ 温度{targetTemp}℃ 設定+安定待ち...";
                             (thermoSuccess, logRows) = await _thermoAct.ThermoAction(measInstData, targetTemp, _cts.Token, NoConfirmCallback);
-#if DEBUG
-                            thermoSuccess = true;
-#endif
+//#if DEBUG
+//                            thermoSuccess = true;
+//#endif
                             if (!thermoSuccess)
                             {
                                 MeasurementStatus = $"サーモ 温度{targetTemp}℃ 設定失敗";
@@ -1588,9 +1592,9 @@ namespace TemperatureCharacteristics
                     //リレーON
                     //*********************
                     bool relaySuccess = await SetRelayPortOnAsync(port);
-#if DEBUG
-                    relaySuccess = true;
-#endif
+//#if DEBUG
+//                    relaySuccess = true;
+//#endif
                     if (!relaySuccess)
                     {
                         rows.Add($"# リレー Sample {port} ON 失敗");
@@ -1781,10 +1785,9 @@ namespace TemperatureCharacteristics
             //*********************
             string usbid = DebugUSBID;
             string cmd = DebugSendCmd;
-            _cts = new CancellationTokenSource();
             DebugLog += $"{cmd} \n";   //送信cmdをlogに追記
                                                         //最終行(最新)を表示はXAMLで対応
-            string res = await _commQuery.Comm_query(usbid, cmd, _cts.Token);
+            string res = await _commQuery.Comm_query(usbid, cmd);
             DebugLog += $"{res} \n";   //応答をlogに追記
                                                         //最終行(最新)を表示はXAMLで対応
         }

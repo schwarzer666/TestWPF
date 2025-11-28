@@ -119,7 +119,7 @@ namespace THERMOcommunication
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    string response = await THERMO_Response(thermoID);
+                    string response = await THERMO_Response(thermoID, cancellationToken);
                     //stability = ((Convert.ToByte(response) << 7) == 128);
                     stability = ((Convert.ToByte(response) & 0x01) == 1);
                     if (stability)
@@ -167,8 +167,9 @@ namespace THERMOcommunication
 
                 while (!stability)                      //温度安定待ちポーリング
                 {
-                    string response = await THERMO_Response(thermoID);
-                    stability = ((Convert.ToByte(response) << 7) == 128);
+                    string response = await THERMO_Response(thermoID, cancellationToken);
+                    //stability = ((Convert.ToByte(response) << 7) == 128);
+                    stability = ((Convert.ToByte(response) & 0x01) == 1);
                     if (!stability)
                         await utility.Wait_Timer(500, cancellationToken);     //500ms毎にTHERMO_Responseメソッドでレジスタ確認
                 }
@@ -204,7 +205,7 @@ namespace THERMOcommunication
                 //**********************************
                 //動作
                 //**********************************
-                THERMO_Set_flow(thermoID, "0");        //Flow OFF
+                await THERMO_Set_flow(thermoID, "0");        //Flow OFF
             }
             catch (Exception ex)
             {
@@ -262,10 +263,10 @@ namespace THERMOcommunication
         //説明：<string> 通信用アドレス
         // USB or GPIB
         //*************************************************
-        private async Task<string> THERMO_Response(string usbid)
+        private async Task<string> THERMO_Response(string usbid, CancellationToken ct)
         {
             string command = "TECR?";
-            string responce = await commQuery.Comm_queryB(usbid, command);      //リモート解除無し
+            string responce = await commQuery.Comm_queryB(usbid, command, ct);      //リモート解除無し
             return responce;
         }
 
