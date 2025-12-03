@@ -773,24 +773,23 @@
 				<ScrollViewer>
 					<StackPanel>
 						<CheckBox 
-							Content="【未実装】結果ファイル出力時測定器ヘッダーを削除"/>
+							Content="結果ファイル出力時測定器フッターを削除"
+							IsChecked="{Binding DebugFinalFileFotterRemove, Mode=TwoWay}"/>
 						<CheckBox 
-							Content="【未実装】確認ポップアップ無視"/>
+							Content="OSC未使用ChOFF(8chOSC使用時)"
+							IsChecked="{Binding DebugUse8chOSC, Mode=TwoWay}"/>
 						<CheckBox 
-							Content="【未実装】8chオシロスコープ使用"/>
+							Content="【未対応】エラーメッセージ無視"/>
 						<CheckBox 
 							Content="Debug CheckBox4(テスト表示)"/>
 						<CheckBox 
-							Content="Debug CheckBox5(テスト表示)"/>
-						<CheckBox 
 							Content="サーモストリーマ安定時間変更(sec)"
-							IsChecked="{Binding ThermoSoak, Mode=TwoWay}"/>
+							IsChecked="{Binding DebugEditThermoSoak, Mode=TwoWay}"/>
 						<TextBox 
 							x:Name="ThermoSoakTime" 
-							Text="600"
-							IsEnabled="{Binding ThermoSoak}"
-							TextWrapping="Wrap"
-							VerticalScrollBarVisibility="Auto"/>
+							Text="{Binding DebugThermoSoakTime, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+							IsEnabled="{Binding DebugEditThermoSoak}"
+							TextWrapping="Wrap"/>
 						<TextBox 
 							x:Name="Debug_textbox2" 
 							Text="Debug Text(テスト表示)"

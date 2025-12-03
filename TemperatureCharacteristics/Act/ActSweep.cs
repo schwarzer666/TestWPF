@@ -1054,10 +1054,14 @@ namespace SweepAction
                             //初期電圧値→wait→OSCトリガ確認
                             //*********************
                             currentValue = initialValue_n / 1_000_000_000.0;
+                            if(enPulse)
+                                await commPG.PG_RangeAutoHold(pulseDevices, tabname, "OFF", cancellationToken);     //PGのAutoRangeHold=OFF
                             triggerDetected = await TrySetVoltageAndCheckTrigger(
                                                                     sweepDevices, oscDevices, pulseDevices, tabname, currentValue, isRise,
                                                                     enOsc, enPulse, checkTime, cancellationToken, 
                                                                     csvRows, triggerRows, null, false);
+                            if (enPulse)
+                                await commPG.PG_RangeAutoHold(pulseDevices, tabname, "ON", cancellationToken);     //PGのAutoRangeHold=ON
                             //初期状態遷移でトリガが検出された場合
                             if (triggerDetected)
                             {

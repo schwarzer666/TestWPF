@@ -235,7 +235,7 @@ namespace UTility
             //測定器が存在しない場合
             if (!filterDevices.Any())
             {
-                MessageBox.Show($"{identifierPrefix} 設定抽出でエラー");
+                //MessageBox.Show($"# {identifierPrefix} 設定抽出でエラー");
                 return (filterDevices, false);
             }
 

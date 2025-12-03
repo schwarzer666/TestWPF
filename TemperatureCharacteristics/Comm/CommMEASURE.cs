@@ -101,7 +101,7 @@ namespace MEASUREcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"DMM Initializeでエラー: {ex.Message}");
+                    throw new Exception($"# FATAL: DMM Initializeでエラー: {ex.Message}");
                 }
             }
         }
@@ -139,7 +139,7 @@ namespace MEASUREcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"DMM トリガ受付待機遷移でエラー: {ex.Message}");
+                    throw new Exception($"# FATAL: DMM トリガ受付待機遷移でエラー: {ex.Message}");
                 }
             }
         }
@@ -178,7 +178,7 @@ namespace MEASUREcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"DMM BUSトリガ発生でエラー: {ex.Message}");
+                    throw new Exception($"# FATAL: DMM BUSトリガ発生でエラー: {ex.Message}");
                 }
             }
         }
@@ -218,7 +218,7 @@ namespace MEASUREcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"DMM Data読み取りでエラー: {ex.Message}");
+                    throw new Exception($"# FATAL: DMM Data読み取りでエラー: {ex.Message}");
                 }
             }
             return Data;
@@ -259,7 +259,7 @@ namespace MEASUREcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"DMM Data読み取りでエラー: {ex.Message}");
+                    throw new Exception($"# FATAL: DMM Data読み取りでエラー: {ex.Message}");
                 }
             }
             return Data;
@@ -302,7 +302,7 @@ namespace MEASUREcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"DMM BUSトリガ発生でエラー: {ex.Message}");
+                    throw new Exception($"# FATAL: DMM BUSトリガ発生でエラー: {ex.Message}");
                 }
             }
         }
@@ -332,7 +332,7 @@ namespace MEASUREcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"DMMリモート解除でエラー: {ex.Message}");
+                    throw new Exception($"# FATAL: DMM リモート解除でエラー: {ex.Message}");
                 }
             }
 
@@ -368,7 +368,7 @@ namespace MEASUREcommunication
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"# Measureコマンド完了チェックでエラー: {ex.Message}");
+                //MessageBox.Show($"# Measureコマンド完了チェックでエラー: {ex.Message}");
                 return false;                                               // エラー時はfalseを返す
             }
             return compflag;
@@ -390,11 +390,12 @@ namespace MEASUREcommunication
                 await commSend.Comm_sendB(usbid, command);      //リモート解除を無効にして送信
                 bool comp = await Complete_Check(usbid, ct);        //直前コマンド完了チェック
                 if (!comp)
-                    throw new Exception("リセット失敗");
+                    throw new Exception("# FATAL: DMM リセット失敗");
             }
             catch (Exception ex)        //例外処理
             {
-                MessageBox.Show($"# Measureリセットでエラーが発生しました: {ex.Message}");
+                //MessageBox.Show($"# Measureリセットでエラーが発生しました: {ex.Message}");
+                throw new Exception($"# FATAL: DMM リセットエラー {ex.Message}", ex);
             }
         }
 

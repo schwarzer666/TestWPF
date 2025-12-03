@@ -365,6 +365,53 @@ namespace PGcommunication
         }
         //*************************************************
         //アクセス：public
+        //戻り値：<bool> 完了フラグ
+        //機能：PG Range Hold
+        //引数1：deviceList
+        //説明：List<Device> 測定器設定リスト
+        // Identifier:PULSE
+        // UsbId:USB ID
+        // InstName:信号名
+        // TabSettings:tab名
+        //引数2：tabItem
+        //説明：<string> Tab名
+        // Item1,Item2(デフォルトTab名)
+        //引数3：sw
+        //説明：<string> RangeHold ON/OFF
+        //*************************************************
+        public async Task PG_RangeAutoHold(List<Device> deviceList, string tabItem, string sw, CancellationToken cancellationToken = default)
+        {
+            foreach (Device device in deviceList)
+            {
+                cancellationToken.ThrowIfCancellationRequested();       //キャンセルチェック
+                try
+                {
+                    //**********************************
+                    //定義
+                    //device.TabSettings[TabSet]をPGSettings型でキャストし
+                    //成功すればpgSettingsインスタンス、失敗すれば新たにインスタンス生成
+                    //**********************************
+                    PGSettings pgSettings = device.TabSettings[tabItem] as PGSettings ?? new PGSettings();
+                    string? pgUSBID = device.UsbId;
+                    string? pgOutCh = pgSettings.OutputCH;
+                    //**********************************
+                    //動作
+                    //**********************************
+                    cancellationToken.ThrowIfCancellationRequested();       //キャンセルチェック
+                    await PG_Set_OutputRange(pgUSBID, pgOutCh, sw);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;      //キャンセル要求を検知したら呼び出し元に通知
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception($"PulseGenerator RangeHoldでエラー: {ex.Message}");
+                }
+            }
+        }
+        //*************************************************
+        //アクセス：public
         //戻り値：なし(Task)
         //機能：PG Remote解除
         //引数1：deviceList
@@ -389,7 +436,8 @@ namespace PGcommunication
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"# PulseGeneratorリモート解除でエラー: {ex.Message}");
+                    //MessageBox.Show($"# PulseGeneratorリモート解除でエラー: {ex.Message}");
+                    throw new Exception($"# FATAL: PG リモート解除でエラーでエラー {ex.Message}", ex);
                 }
             }
 
@@ -425,7 +473,7 @@ namespace PGcommunication
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"# PGコマンド完了チェックでエラー: {ex.Message}");
+                //MessageBox.Show($"# PGコマンド完了チェックでエラー: {ex.Message}");
                 return false;                                               // エラー時はfalseを返す
             }
             return compflag;
@@ -447,13 +495,16 @@ namespace PGcommunication
             try
             {
                 await commSend.Comm_sendB(usbid, command);          //リモート解除を無効にして送信
+                await timer_ms.Wait_Timer(3500, ct);                     //2000ms wait
+                await commSend.Comm_sendB(usbid, "*CLS");
                 bool comp = await Complete_Check(usbid, ct);                  //直前コマンド完了チェック
                 if (!comp)
-                    throw new Exception("リセット失敗");
+                    throw new Exception("# FATAL: リセット失敗");
             }
             catch (Exception ex)        //例外処理
             {
-                MessageBox.Show($"# PGリセットでエラーが発生しました: {ex.Message}");
+                //MessageBox.Show($"# FATAL: PG リセットでエラーが発生しました: {ex.Message}");
+                throw new Exception($"# FATAL: PG リセットエラー {ex.Message}", ex);
             }
         }
         //*************************************************
@@ -741,7 +792,7 @@ namespace PGcommunication
         // "1" or "2" 
         //引数3：range
         //説明：<string> PG出力オートレンジ機能ON/OFF
-        // "ON" or "OFF"
+        // "ON" or "OFF" or "ONCE"
         //*************************************************
         private async Task PG_Set_OutputRange(string usbid, string ch, string range)
         {

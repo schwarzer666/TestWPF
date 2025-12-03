@@ -1,5 +1,6 @@
 ﻿using Ivi.Visa.Interop;             //Visaライブラリ
 using System.Windows;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace USBcommunication
 {
@@ -48,7 +49,8 @@ namespace USBcommunication
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"# 測定器通信確認エラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                //MessageBox.Show($"# 測定器通信確認エラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                res = $"# 測定器通信確認エラー: {ex.Message}";
                 response = false;
             }
             return (res, response);
@@ -77,9 +79,14 @@ namespace USBcommunication
                 inst.IO.Timeout = 10000;
                 await RemoteOFF(inst);
             }
+            catch(TimeoutException tex)
+            {
+                throw new Exception($"# WARN: リモート解除タイムアウト {tex.Message}", tex);
+            }
             catch (Exception ex)
             {
-                MessageBox.Show($"# リモート解除でエラー: {ex.Message}");
+                //MessageBox.Show($"# リモート解除でエラー: {ex.Message}");
+                throw new Exception($"# FATAL: リモート解除エラー {ex.Message}", ex);
             }
         }
 
@@ -110,9 +117,14 @@ namespace USBcommunication
                 //********
                 inst.WriteString(command, true);  //trueで終端文字を追加
             }
+            catch (TimeoutException tex)
+            {
+                throw new Exception($"# WARN: コマンド送信タイムアウト {tex.Message}", tex);
+            }
             catch (Exception ex)
             {
-                MessageBox.Show($"# 送信コマンドエラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                //MessageBox.Show($"# 送信コマンドエラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw new Exception($"# FATAL: コマンド送信エラー {ex.Message}", ex);
             }
             finally
             {
@@ -155,9 +167,14 @@ namespace USBcommunication
                 //********
                 inst.WriteString(command, true);  //trueで終端文字を追加
             }
+            catch (TimeoutException tex)
+            {
+                throw new Exception($"# WARN: コマンド送信タイムアウト {tex.Message}", tex);
+            }
             catch (Exception ex)
             {
-                MessageBox.Show($"# 送信コマンドエラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                //MessageBox.Show($"# 送信コマンドエラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw new Exception($"# FATAL: コマンド送信エラー {ex.Message}", ex);
             }
             finally
             {
@@ -211,14 +228,15 @@ namespace USBcommunication
                         //応答受信
                         //********
                         response = inst.ReadString();
-                        return response; // 成功したら即返す
+                        return response; //成功したら即返す
                     }
                     catch (Exception ex)
                     {
                         //最終試行なら例外を投げる
                         if (attempt == maxAttempts - 1)
                         {
-                            MessageBox.Show($"# 送受信エラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                            //MessageBox.Show($"# 送受信エラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                            response = $"# 送受信エラー: {ex.Message}";
                             throw;
                         }
                         //100ms待って再試行
@@ -282,14 +300,15 @@ namespace USBcommunication
                         //応答受信
                         //********
                         response = inst.ReadString();
-                        return response; // 成功したら即返す
+                        return response; //成功したら即返す
                     }
                     catch (Exception ex)
                     {
                         //最終試行なら例外を投げる
                         if (attempt == maxAttempts - 1)
                         {
-                            MessageBox.Show($"# 送受信エラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                            //MessageBox.Show($"# 送受信エラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                            response = $"# 送受信エラー: {ex.Message}";
                             throw;
                         }
                         //100ms待って再試行
@@ -339,7 +358,8 @@ namespace USBcommunication
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"# 受信時測定器オープンエラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                    //MessageBox.Show($"# 受信時測定器オープンエラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                    response = $"# 受信時測定器オープンエラー: {ex.Message}";
                 }
                 try
                 {
@@ -350,8 +370,9 @@ namespace USBcommunication
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"# 受信エラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                    response = "受信失敗";
+                    //MessageBox.Show($"# 受信エラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                    //response = "受信失敗";
+                    response = $"# 受信エラー: {ex.Message}";
                 }
             }
             finally

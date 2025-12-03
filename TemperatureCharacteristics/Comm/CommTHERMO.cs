@@ -73,7 +73,7 @@ namespace THERMOcommunication
             }
             catch (Exception ex)        //例外処理
             {
-                throw new Exception($"サーモイニシャルでエラーが発生しました: {ex.Message}");
+                throw new Exception($"# FATAL: THERMO イニシャルでエラーが発生しました: {ex.Message}");
             }
         }
 
@@ -131,7 +131,7 @@ namespace THERMOcommunication
                     {
                         await THERMO_Set_poin(thermoID, "1");
                         await THERMO_Set_flow(thermoID, "1");
-                        throw new TimeoutException("温度が30分以内に安定しませんでした。");
+                        throw new TimeoutException("# FATAL: THERMO 温度が30分以内に安定しませんでした。");
                     }
                     await utility.Wait_Timer(500, cancellationToken);     //500ms毎にTHERMO_Responseメソッドでレジスタ確認
                 }
@@ -143,7 +143,7 @@ namespace THERMOcommunication
             catch (Exception ex)        //例外処理
             {
                 await THERMO_Set_flow(thermoID, "0");        //Flow OFF
-                throw new Exception($"温度安定待ちでエラーが発生しました: {ex.Message}");
+                throw new Exception($"# FATAL: THERMO 温度安定待ちでエラーが発生しました: {ex.Message}");
             }
         }
         //*************************************************
@@ -181,7 +181,7 @@ namespace THERMOcommunication
             catch (Exception ex)        //例外処理
             {
                 await THERMO_Set_flow(thermoID, "0");        //Flow OFF
-                throw new Exception($"温度安定待ちでエラーが発生しました: {ex.Message}");
+                throw new Exception($"# FATAL: THERMO 温度安定待ちでエラーが発生しました: {ex.Message}");
             }
             finally
             {
@@ -209,7 +209,8 @@ namespace THERMOcommunication
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"# THERMO FlowOffでエラー: {ex.Message}");
+                //MessageBox.Show($"# THERMO FlowOffでエラー: {ex.Message}");
+                throw new Exception($"# FATAL: THERMO FlowOffでエラー {ex.Message}", ex);
             }
 
         }
@@ -233,7 +234,8 @@ namespace THERMOcommunication
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"# THERMOリモート解除でエラー: {ex.Message}");
+                //MessageBox.Show($"# THERMOリモート解除でエラー: {ex.Message}");
+                throw new Exception($"# FATAL: THERMO リモート解除エラー {ex.Message}", ex);
             }
 
         }
@@ -250,7 +252,8 @@ namespace THERMOcommunication
         //*************************************************
         private async Task THERMO_Reset(string usbid)
         {
-            string command = "*RST";
+            //string command = "*RST";
+            string command = "*RSTO";                           //リセット後オペレータモードへ遷移
             await commSend.Comm_sendB(usbid, command);          //リモート解除を無効にして送信
             await utility.Wait_Timer(4100);                         //OPC未実装の為4000ms+100msWait 仕様書では4s待ち
         }

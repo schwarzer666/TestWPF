@@ -89,7 +89,7 @@ namespace SOURCEcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"Sourceコマンド完了チェックでエラー: {ex.Message}");
+                    throw new Exception($"# FATAL: Source イニシャルエラー: {ex.Message}");
                 }
             }
         }
@@ -132,7 +132,7 @@ namespace SOURCEcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"Source OUTPUTonでエラー: {ex.Message}");
+                    throw new Exception($"# FATAL: Source OUTPUTonでエラー: {ex.Message}");
                 }
             }
         }
@@ -169,7 +169,7 @@ namespace SOURCEcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"Source OUTPUToffでエラー: {ex.Message}");
+                    throw new Exception($"# FATAL: Source OUTPUToffでエラー: {ex.Message}");
                 }
             }
         }
@@ -211,7 +211,7 @@ namespace SOURCEcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"Source SetValueでエラー: {ex.Message}");
+                    throw new Exception($"# FATAL: Source SetValueでエラー: {ex.Message}");
                 }
             }
             
@@ -242,7 +242,8 @@ namespace SOURCEcommunication
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"# Sourceリモート解除でエラー: {ex.Message}");
+                    //MessageBox.Show($"# Sourceリモート解除でエラー: {ex.Message}");
+                    throw new Exception($"# FATAL: Source リモート解除エラー {ex.Message}", ex);
                 }
             }
 
@@ -278,7 +279,7 @@ namespace SOURCEcommunication
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"# Sourceコマンド完了チェックでエラー: {ex.Message}");
+                //MessageBox.Show($"# Sourceコマンド完了チェックでエラー: {ex.Message}");
                 return false;                                               // エラー時はfalseを返す
             }
             return compflag;
@@ -302,11 +303,12 @@ namespace SOURCEcommunication
                 await commSend.Comm_sendB(usbid, command);          //リモート解除を無効にして送信
                 bool comp = await Complete_Check(usbid, ct);                  //直前コマンド完了チェック
                 if (!comp)
-                    throw new Exception("リセット失敗");
+                    throw new Exception("# FATAL: リセット失敗");
             }
             catch (Exception ex)        //例外処理
             {
-                MessageBox.Show($"# Sourceリセットでエラーが発生しました: {ex.Message}");
+                //MessageBox.Show($"# Sourceリセットでエラーが発生しました: {ex.Message}");
+                throw new Exception($"# FATAL: Source リセットエラー {ex.Message}", ex);
             }
         }
 

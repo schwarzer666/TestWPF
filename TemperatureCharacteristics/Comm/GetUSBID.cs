@@ -75,33 +75,49 @@ namespace USBID
         //*************************************************
         private void GetUSBaddr()
         {
-            try
+            // Win32_PnPEntityからクラスGUIDでフィルタ
+            string query = $"SELECT * FROM Win32_PnPEntity WHERE ClassGuid = '{{{usbClassGuid}}}'";
+            ManagementObjectSearcher? searcher = new ManagementObjectSearcher(query);
+
+            foreach (ManagementObject? device in searcher.Get())
             {
-                // Win32_PnPEntityからクラスGUIDでフィルタ
-                string query = $"SELECT * FROM Win32_PnPEntity WHERE ClassGuid = '{{{usbClassGuid}}}'";
-                ManagementObjectSearcher? searcher = new ManagementObjectSearcher(query);
+                string deviceId = device["DeviceID"]?.ToString() ?? "不明";   //条件 ? 真の場合 : 偽の場合 ??=null参照エラー防止 → device["DeviceID"]があれば文字列形式で取り込み、なければnullになるので"不明"という文字列を入れる
 
-                foreach (ManagementObject? device in searcher.Get())
-                {
-                    string deviceId = device["DeviceID"]?.ToString() ?? "不明";   //条件 ? 真の場合 : 偽の場合 ??=null参照エラー防止 → device["DeviceID"]があれば文字列形式で取り込み、なければnullになるので"不明"という文字列を入れる
+                string strVID = deviceId.Substring(deviceId.IndexOf("VID_") + 4, 4);     //indexofでVID_の先頭番号(←4)を探し、USB\VID_(←4+4)を除いて4文字取得
+                string strPID = deviceId.Substring(deviceId.IndexOf("PID_") + 4, 4);   //indexofでPID_の先頭番号(←13)を探し、USB\VID_xxxx\PID_(←13+4)を除いて4文字取得
+                string strSN = deviceId.Substring(deviceId.IndexOf("PID_") + 9);      //indexofでPID_の先頭番号(←13)を探し、USB\VID_xxxx\PID_xxxx\(←13+9)を除いて残りを取得
 
-                    string strVID = deviceId.Substring(deviceId.IndexOf("VID_") + 4, 4);     //indexofでVID_の先頭番号(←4)を探し、USB\VID_(←4+4)を除いて4文字取得
-                    string strPID = deviceId.Substring(deviceId.IndexOf("PID_") + 4, 4);   //indexofでPID_の先頭番号(←13)を探し、USB\VID_xxxx\PID_(←13+4)を除いて4文字取得
-                    string strSN = deviceId.Substring(deviceId.IndexOf("PID_") + 9);      //indexofでPID_の先頭番号(←13)を探し、USB\VID_xxxx\PID_xxxx\(←13+9)を除いて残りを取得
-
-                    //usbADD = "USB::0x" + strVID.ToString() + "::0x" + strPID.ToString() + "::" + strSN.ToString() + "::0::INSTR";
-                    string usbADD = $"USB::0x{strVID}::0x{strPID}::{strSN}::0::INSTR";
-                    deviceInfo.AppendLine($"{usbADD}");
-                }
-                if (deviceInfo.Length == 0)
-                {
-                    MessageBox.Show("# IVIに対応した測定器が接続されていません");
-                }
+                //usbADD = "USB::0x" + strVID.ToString() + "::0x" + strPID.ToString() + "::" + strSN.ToString() + "::0::INSTR";
+                string usbADD = $"USB::0x{strVID}::0x{strPID}::{strSN}::0::INSTR";
+                deviceInfo.AppendLine($"{usbADD}");
             }
-            catch (Exception ex)        //例外処理
-            {
-                MessageBox.Show($"# USBアドレス取得エラー: {ex.Message}");
-            }
+            //try
+            //{
+            //    // Win32_PnPEntityからクラスGUIDでフィルタ
+            //    string query = $"SELECT * FROM Win32_PnPEntity WHERE ClassGuid = '{{{usbClassGuid}}}'";
+            //    ManagementObjectSearcher? searcher = new ManagementObjectSearcher(query);
+
+            //    foreach (ManagementObject? device in searcher.Get())
+            //    {
+            //        string deviceId = device["DeviceID"]?.ToString() ?? "不明";   //条件 ? 真の場合 : 偽の場合 ??=null参照エラー防止 → device["DeviceID"]があれば文字列形式で取り込み、なければnullになるので"不明"という文字列を入れる
+
+            //        string strVID = deviceId.Substring(deviceId.IndexOf("VID_") + 4, 4);     //indexofでVID_の先頭番号(←4)を探し、USB\VID_(←4+4)を除いて4文字取得
+            //        string strPID = deviceId.Substring(deviceId.IndexOf("PID_") + 4, 4);   //indexofでPID_の先頭番号(←13)を探し、USB\VID_xxxx\PID_(←13+4)を除いて4文字取得
+            //        string strSN = deviceId.Substring(deviceId.IndexOf("PID_") + 9);      //indexofでPID_の先頭番号(←13)を探し、USB\VID_xxxx\PID_xxxx\(←13+9)を除いて残りを取得
+
+            //        //usbADD = "USB::0x" + strVID.ToString() + "::0x" + strPID.ToString() + "::" + strSN.ToString() + "::0::INSTR";
+            //        string usbADD = $"USB::0x{strVID}::0x{strPID}::{strSN}::0::INSTR";
+            //        deviceInfo.AppendLine($"{usbADD}");
+            //    }
+                //if (deviceInfo.Length == 0)
+                //{
+                //    MessageBox.Show("# IVIに対応した測定器が接続されていません");
+                //}
+            //}
+            //catch (Exception ex)        //例外処理
+            //{
+            //    MessageBox.Show($"# USBアドレス取得エラー: {ex.Message}");
+            //}
         }
 
         //*************************************************
@@ -113,25 +129,30 @@ namespace USBID
         //*************************************************
         private void GetGPIBaddr()
         {
-            try
+            string[] gpibResources = rm.FindRsrc("GPIB?*INSTR");
+            foreach (string resource in gpibResources)
             {
-                //string[] gpibResources = rm.FindResources("GPIB?*INSTR").Cast<string>().ToArray();
-                //string[] resources = rm.FindRsrc("GPIB?*::INTFC");
+                deviceInfo.AppendLine(resource); // 例: "GPIB0::5::INSTR"
+            }
+            //try
+            //{
+            //    //string[] gpibResources = rm.FindResources("GPIB?*INSTR").Cast<string>().ToArray();
+            //    //string[] resources = rm.FindRsrc("GPIB?*::INTFC");
 
-                string[] gpibResources = rm.FindRsrc("GPIB?*INSTR");
-                foreach (string resource in gpibResources)
-                {
-                    deviceInfo.AppendLine(resource); // 例: "GPIB0::5::INSTR"
-                }
-                if (deviceInfo.Length == 0)
-                {
-                    MessageBox.Show("# GPIBに対応した測定器が接続されていません");
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"# GPIBアドレス取得エラー: {ex.Message}");
-            }
+            //    string[] gpibResources = rm.FindRsrc("GPIB?*INSTR");
+            //    foreach (string resource in gpibResources)
+            //    {
+            //        deviceInfo.AppendLine(resource); // 例: "GPIB0::5::INSTR"
+            //    }
+            //    if (deviceInfo.Length == 0)
+            //    {
+            //        MessageBox.Show("# GPIBに対応した測定器が接続されていません");
+            //    }
+            //}
+            //catch (Exception ex)
+            //{
+            //    MessageBox.Show($"# GPIBアドレス取得エラー: {ex.Message}");
+            //}
         }
 
         //*************************************************
