@@ -3,6 +3,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using TemperatureCharacteristics.Models;
 
 namespace SweepTab
 {

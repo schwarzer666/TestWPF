@@ -1240,7 +1240,7 @@ namespace SweepAction
             }
             catch (OperationCanceledException)
             {
-                sweepData.Add("処理がキャンセルされました。");
+                sweepData.Add("# Sweep動作がキャンセルされました。");
                 csvRows.Add($"# {string.Join(" ", sweepData).Replace(Environment.NewLine, " ")}");
                 //処理中のタブデータがあれば保存
                 if (tabCsvRows.Any() && tabCsvRows.Count > 1)
@@ -1252,7 +1252,7 @@ namespace SweepAction
             }
             catch (Exception ex)
             {
-                sweepData.Add($"エラーが発生しました: {ex.Message}");
+                sweepData.Add($"# Sweep動作中にエラーが発生しました: {ex.Message}");
                 csvRows.Add($"# {string.Join(" ", sweepData).Replace(Environment.NewLine, " ")}");
                 //処理中のタブデータがあれば保存
                 if (tabCsvRows.Any() && tabCsvRows.Count > 1)

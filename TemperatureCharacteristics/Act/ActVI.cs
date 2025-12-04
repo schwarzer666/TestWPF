@@ -641,7 +641,7 @@ namespace VIAction
             }
             catch (OperationCanceledException)
             {
-                viData.Add("処理がキャンセルされました。");
+                viData.Add("# VI動作がキャンセルされました。");
                 csvRows.Add($"# {string.Join(" ", viData).Replace(Environment.NewLine, " ")}");
                 //処理中のタブデータがあれば保存
                 if (tabCsvRows.Any() && tabCsvRows.Count > 1)
@@ -653,7 +653,7 @@ namespace VIAction
             }
             catch (Exception ex)
             {
-                viData.Add($"エラーが発生しました: {ex.Message}");
+                viData.Add($"# VI動作中にエラーが発生しました: {ex.Message}");
                 csvRows.Add($"# {string.Join(" ", viData).Replace(Environment.NewLine, " ")}");
                 //処理中のタブデータがあれば保存
                 if (tabCsvRows.Any() && tabCsvRows.Count > 1)

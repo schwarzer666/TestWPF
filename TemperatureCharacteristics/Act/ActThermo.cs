@@ -59,12 +59,12 @@ namespace ThermoAction
             }
             catch (OperationCanceledException)
             {
-                log.Add("# 処理がキャンセルされました。");
+                log.Add("# サーモストリーマ初期設定がキャンセルされました。");
                 throw;          //キャンセル要求を検知したら呼び出し元に通知
             }
             catch (Exception ex)
             {
-                log.Add($"エラーが発生しました: {ex.Message}");
+                log.Add($"サーモストリーマ初期設定中にエラーが発生しました: {ex.Message}");
                 return (false, log);
             }
             return (true, log);
@@ -100,7 +100,7 @@ namespace ThermoAction
             }
             catch (OperationCanceledException)
             {
-                log.Add("# 処理がキャンセルされました。");
+                log.Add("# 温度設定がキャンセルされました。");
                 throw;          //キャンセル要求を検知したら呼び出し元に通知
             }
             catch (TimeoutException tex)
@@ -110,7 +110,7 @@ namespace ThermoAction
             }
             catch (Exception ex)
             {
-                log.Add($"# エラーが発生しました: {ex.Message}");
+                log.Add($"# 温度設定中にエラーが発生しました: {ex.Message}");
                 return (false, log);
             }
             await commTHERMO.THERMO_RemoteOFF(thermoId);

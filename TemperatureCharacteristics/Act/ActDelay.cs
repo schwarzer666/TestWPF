@@ -612,7 +612,7 @@ namespace DelayAction
             }
             catch (OperationCanceledException)
             {
-                delayData.Add("処理がキャンセルされました。");
+                delayData.Add("# Delay動作がキャンセルされました。");
                 csvRows.Add($"# {string.Join(" ", delayData).Replace(Environment.NewLine, " ")}");
                 //処理中のタブデータがあれば保存
                 if (tabCsvRows.Any() && tabCsvRows.Count > 1)
@@ -624,7 +624,7 @@ namespace DelayAction
             }
             catch (Exception ex)
             {
-                delayData.Add($"エラーが発生しました: {ex.Message}");
+                delayData.Add($"# Delay動作中にエラーが発生しました: {ex.Message}");
                 csvRows.Add($"# {string.Join(" ", delayData).Replace(Environment.NewLine, " ")}");
                 //処理中のタブデータがあれば保存
                 if (tabCsvRows.Any() && tabCsvRows.Count > 1)
