@@ -705,14 +705,14 @@
 				<RowDefinition Height="30"/>
 				<RowDefinition Height="30"/>
 				<RowDefinition Height="30"/>
-				<RowDefinition Height="30"/>
-				<RowDefinition Height="30"/>
-				<RowDefinition Height="Auto"/>
-				<RowDefinition Height="30"/>
-				<RowDefinition Height="30"/>
-				<RowDefinition Height="30"/>
-				<RowDefinition Height="30"/>
-				<RowDefinition Height="30"/>
+				<RowDefinition Height="*"/>
+				<RowDefinition Height="*"/>
+				<RowDefinition Height="*"/>
+				<RowDefinition Height="*"/>
+				<RowDefinition Height="*"/>
+				<RowDefinition Height="*"/>
+				<RowDefinition Height="*"/>
+				<RowDefinition Height="*"/>
 			</Grid.RowDefinitions>
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition Width="100"/>
@@ -781,8 +781,6 @@
 						<CheckBox 
 							Content="【未対応】エラーメッセージ無視"/>
 						<CheckBox 
-							Content="Debug CheckBox4(テスト表示)"/>
-						<CheckBox 
 							Content="サーモストリーマ安定時間変更(sec)"
 							IsChecked="{Binding DebugEditThermoSoak, Mode=TwoWay}"/>
 						<TextBox 
@@ -790,6 +788,8 @@
 							Text="{Binding DebugThermoSoakTime, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
 							IsEnabled="{Binding DebugEditThermoSoak}"
 							TextWrapping="Wrap"/>
+						<Label 
+							Content="【未対応】デバッグ窓表示上限"/>
 						<TextBox 
 							x:Name="Debug_textbox2" 
 							Text="Debug Text(テスト表示)"
@@ -814,30 +814,26 @@
 				</ScrollViewer>
 			</Grid>
 
-			<Button 
-				x:Name="debug_temp" 
-				Content="汎用debugButton"
-				Command="{Binding DebugTempCommand}"
-				Margin="5,2"
-				Grid.Row="9" Grid.Column="0"/>
             <Button 
 				x:Name="debug_textbox_clear" 
 				Content="デバッグ窓クリア" 
 				Command="{Binding DebugTextboxClearCommand}"
 				Margin="5,2" 
 				Grid.Row="10" Grid.Column="0"/>
-            <TextBox 
-					x:Name="debug_textbox" 
-					Text="{Binding DebugTextBox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-					TextWrapping="Wrap"
-					VerticalScrollBarVisibility="Auto"
-					Margin="5,2"
-					Grid.Row="11" Grid.Column="0"
-					Grid.RowSpan="8" Grid.ColumnSpan="3">
-                    <i:Interaction.Behaviors>
-                        <behaviors:ScrollToEndBehavior/>
-                    </i:Interaction.Behaviors>
-                </TextBox>
-        </Grid>
+			<TextBox 
+				x:Name="debug_textbox" 
+				Text="{Binding DebugTextBox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+				VerticalScrollBarVisibility="Visible"
+				TextWrapping="Wrap"
+				AcceptsReturn="True"
+				IsReadOnly="True"
+				Margin="5,2"
+				Grid.Row="11" Grid.Column="0"
+				Grid.RowSpan="6" Grid.ColumnSpan="3">
+				<i:Interaction.Behaviors>
+					<behaviors:ScrollToEndBehavior/>
+				</i:Interaction.Behaviors>
+			</TextBox>
+		</Grid>
 	</Grid>
 </Window>

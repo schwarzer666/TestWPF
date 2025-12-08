@@ -7,6 +7,7 @@ using SweepTab;                     //LayoutSweepTab.cs
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -15,6 +16,7 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 using TemperatureCharacteristics.Act;
 using TemperatureCharacteristics.Models;
 using TemperatureCharacteristics.Services;
@@ -274,7 +276,6 @@ namespace TemperatureCharacteristics
         public ICommand DebugSendCommand { get; }
         public ICommand DebugQueryCommand { get; }
         public ICommand DebugLogClearCommand { get; }
-        public ICommand DebugTempCommand { get; }
         public ICommand DebugTextboxClearCommand { get; }
         public ICommand NotYetCommand { get; }
         //*************************************************
@@ -363,8 +364,8 @@ namespace TemperatureCharacteristics
             //**********************************
             string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Data", "presets.json");
             var (presets, presetLog, selectedPathpreset) = _dataService.LoadItems<PresetItemBase>(filePath);
-            PresetButtons = presets;    //読み込んだJSONファイルにフィルタを掛けるためPresetButtonsは不要になる見込み
-            DebugTextBox += presetLog;
+            PresetButtons = presets;
+            this.LogDebug(presetLog);
             //**********************************
             //Popup表示用フィルタ
             //**********************************
@@ -382,6 +383,12 @@ namespace TemperatureCharacteristics
             //**********************************
             RegisterInstrumentHandlers();
             SubscribeInstrumentCheckChanges();
+            //**********************************
+            //1秒ごとにメモリ使用量を更新
+            //**********************************
+            //_memoryTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            //_memoryTimer.Tick += (s, e) => UpdateMemoryUsage();
+            //_memoryTimer.Start();
 
             StartMeasurementCommand = new RelayCommandAsync(execute: async (param) => await StartMeasurementAsync(), () => true);    //ボタンは常に有効
             GetUSBIDCommand = new RelayCommandAsync(execute: async (param) => await GetUSBIDAsync(), canExecute: () => !IsRunning);
@@ -400,7 +407,6 @@ namespace TemperatureCharacteristics
             DebugQueryCommand = new RelayCommandAsync(execute: async (param) => await DebugQuery(), CanExecuteCommands);
             DebugLogClearCommand = new RelayCommandAsync(async (param) => DebugLog = string.Empty, CanExecuteCommands);             //DebugLogをClear
             DebugTextboxClearCommand = new RelayCommandAsync(async (param) => DebugTextBox = string.Empty, CanExecuteCommands);     //DebugTextBoxをClear
-            DebugTempCommand = new RelayCommandAsync(execute: async (param) => await DebugTemp(), CanExecuteCommands);
 
             MeasurementStatus = "準備完了";
 //#if DEBUG
@@ -421,7 +427,6 @@ namespace TemperatureCharacteristics
             //Popup表示時フィルタ適用
             FilterPresetsForTab(CurrentTabViewModel);
             IsPopupOpen = !IsPopupOpen;
-            DebugTextBox += $"OpenPopupAsync: CurrentTabViewModel={CurrentTabViewModel?.GetType()?.FullName}, IsPopupOpen={IsPopupOpen}\n"; //debug用途
         }
         //****************************************************************************
         //動作
@@ -455,9 +460,7 @@ namespace TemperatureCharacteristics
                                                 sweepConfig.OscConfig,
                                                 sweepConfig.DmmConfig,
                                                 sweepConfig.PulseGenConfig
-                                            },
-                                            msg => DebugTextBox += msg + "\n"
-                                        );
+                                            });
                             newConfig = sweepConfig;
                             break;
 
@@ -478,9 +481,7 @@ namespace TemperatureCharacteristics
                                                 delayConfig.DetectReleaseConfig,
                                                 delayConfig.OscConfig,
                                                 delayConfig.PulseGenConfig
-                                            },
-                                            msg => DebugTextBox += msg + "\n"
-                                        );
+                                            });
                             newConfig = delayConfig;
                             break;
 
@@ -501,28 +502,27 @@ namespace TemperatureCharacteristics
                                                 viConfig.ConstConfig,
                                                 viConfig.DetectReleaseConfig,
                                                 viConfig.DmmConfig,
-                                            },
-                                            msg => DebugTextBox += msg + "\n"
-                                        );
+                                            });
                             newConfig = viConfig;
                             break;
 
                         default:
-                            DebugTextBox += $"無効なタブ型: {parameter.GetType().Name}\n";
+                            this.LogDebug($"無効なタブ型: {parameter.GetType().Name}");
                             break;
                     }
                     if (newConfig != null)
                     {
                         UserConfigs.Add(newConfig);
                         var (success, log, selectedPath) = _dataService.SaveItems<PresetItemBase>(null, UserConfigs);
-                        DebugTextBox += log;
-                        DebugTextBox += success
-                            ? $"ユーザー設定を保存しました: ID={newConfig.Id}, Name={newConfig.Name}, Path={selectedPath ?? "未選択"}\n"
-                            : "ユーザー設定の保存に失敗しました\n";
+                        this.LogDebug(log);
+                        this.LogDebug(success ? 
+                            $"ユーザー設定を保存しました: ID={newConfig.Id}, Name={newConfig.Name}, Path={selectedPath ?? "未選択"}"
+                            : "ユーザー設定の保存に失敗しました"
+                            );
                     }
                 }
                 else
-                    DebugTextBox += $"エラー: parameter is null\n";
+                    this.LogDebug($"エラー: parameter is null");
             });
         }
         //****************************************************************************
@@ -537,11 +537,15 @@ namespace TemperatureCharacteristics
                             !string.IsNullOrEmpty(param.TabType) && !string.IsNullOrEmpty(param.TabId))
                 {
                     var (configs, loadLog, selectedPath) = _dataService.LoadItems<PresetItemBase>();
-                    DebugTextBox += loadLog;
-                    if (configs?.Any() != true) { DebugTextBox += "ユーザー設定読み込み失敗\n"; return; }
+                    this.LogDebug(loadLog);
+                    if (configs?.Any() != true)
+                    {
+                        this.LogDebug("ユーザー設定読み込み失敗"); 
+                        return; 
+                    }
 
                     UserConfigs = configs;
-                    DebugTextBox += $"{configs.Count}設定を {selectedPath} から読み込み\n";
+                    this.LogDebug($"{configs.Count}設定を {selectedPath} から読み込み");
 
                     foreach (var config in configs)
                         ApplyToTabs(config, FindTargetTab(config, param.TabId));
@@ -576,7 +580,7 @@ namespace TemperatureCharacteristics
                     IsPopupOpen = false;
                 }
                 else
-                    DebugTextBox += $"無効なパラメータ: Preset={parameter?.GetType()?.FullName}, CurrentTabViewModel={CurrentTabViewModel?.GetType()?.FullName}\n";
+                    this.LogDebug($"無効なパラメータ: Preset={parameter?.GetType()?.FullName}, CurrentTabViewModel={CurrentTabViewModel?.GetType()?.FullName}");
             });
         }
         //****************************************************************************
@@ -585,7 +589,11 @@ namespace TemperatureCharacteristics
         //****************************************************************************
         private void ApplyToTabs(PresetItemBase preset, object targetTab)
         {
-            if (targetTab == null) { DebugTextBox += "エラー: 対象タブなし\n"; return; }
+            if (targetTab == null)
+            {
+                this.LogDebug("エラー: 対象タブなし"); 
+                return; 
+            }
             ApplyProperties(preset, targetTab, GetTabClass(targetTab));
             MeasurementStatus = $"プリセット {preset.Name} を {GetTabType(targetTab)}タブに適用";
         }
@@ -616,7 +624,7 @@ namespace TemperatureCharacteristics
         //動作
         // ViewModelからプロパティをコピー
         //****************************************************************************
-        public static void CopyProperties(object source, object target, IEnumerable<object> nestedTargets = null, Action<string> debugLog = null)
+        public void CopyProperties(object source, object target, IEnumerable<object> nestedTargets = null)
         {
             var sourceProps = source.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
             var targetType = target.GetType();
@@ -632,8 +640,7 @@ namespace TemperatureCharacteristics
                 if (directProp?.CanWrite == true)
                 {
                     directProp.SetValue(target, value);
-                    //LogDebug($"Copied {prop.Name}={value} to {targetType.Name}");
-                    debugLog?.Invoke($"Copied {prop.Name}={value} to {targetType.Name}");
+                    this.LogDebug($"Copied {prop.Name}={value} to {targetType.Name}");
                     continue;
                 }
 
@@ -646,7 +653,7 @@ namespace TemperatureCharacteristics
                         if (nestedProp?.CanWrite == true)
                         {
                             nestedProp.SetValue(nested, value);
-                            debugLog?.Invoke($"Copied {prop.Name}={value} to {nested.GetType().Name}");
+                            this.LogDebug($"Copied {prop.Name}={value} to {nested.GetType().Name}");
                             break;
                         }
                     }
@@ -750,13 +757,13 @@ namespace TemperatureCharacteristics
             string? serial = RelaySerialNumber;
             if (string.IsNullOrWhiteSpace(serial))
             {
-                MeasurementStatus = "リレーのシリアルナンバーが未設定";
+                this.LogDebug("リレーのシリアルナンバーが未設定");
                 return false;
             }
             //シリアルナンバーでポートオープン+BitBangモード
             if (!await _bitBang.OpenBySerialNumberAsync(serial))
             {
-                MeasurementStatus = "FT2232H 接続失敗";
+                this.LogDebug("FT2232H 接続失敗");
                 return false;
             }
 
@@ -773,7 +780,7 @@ namespace TemperatureCharacteristics
             }
             catch (Exception ex)
             {
-                MeasurementStatus = $"リレー制御エラー: {ex.Message}";
+                this.LogDebug($"リレー制御エラー: {ex.Message}");
                 return false;
             }
             finally
@@ -810,13 +817,13 @@ namespace TemperatureCharacteristics
             string? serial = RelaySerialNumber;
             if (string.IsNullOrWhiteSpace(serial))
             {
-                MeasurementStatus = "リレーのシリアルナンバーが未設定";
+                this.LogDebug("リレーのシリアルナンバーが未設定");
                 return;
             }
             //シリアルナンバーでポートオープン+BitBangモード
             if (!await _bitBang.OpenBySerialNumberAsync(serial))
             {
-                MeasurementStatus = "FT2232H 接続失敗";
+                this.LogDebug("FT2232H 接続失敗");
                 return;
             }
 
@@ -847,13 +854,13 @@ namespace TemperatureCharacteristics
             string? serial = RelaySerialNumber;
             if (string.IsNullOrWhiteSpace(serial))
             {
-                MeasurementStatus = "リレーのシリアルナンバーが未設定";
+                this.LogDebug("リレーのシリアルナンバーが未設定");
                 return;
             }
             //シリアルナンバーでポートオープン+BitBangモード
             if (!await _bitBang.OpenBySerialNumberAsync(serial))
             {
-                MeasurementStatus = "FT2232H 接続失敗";
+                this.LogDebug("FT2232H 接続失敗");
                 return;
             }
 
@@ -891,7 +898,7 @@ namespace TemperatureCharacteristics
             List<string> gpibLsit = await Task.Run(() => _getGPIBID.GetGPIBList());
             List<FTDeviceInfo> ftList = await Task.Run(() => _getFtdiID.GetFT2232HList());
             //debug*********************************
-            DebugTextBox = string.Join(Environment.NewLine, usbList, gpibLsit, ftList);
+            this.LogDebug(string.Join(Environment.NewLine, usbList, gpibLsit, ftList));
             //*********************************debug
             USBIDList.Clear();
             if (usbList != null && usbList.Count > 0)
@@ -992,16 +999,13 @@ namespace TemperatureCharacteristics
             foreach ((string identifier, string usbid, string instname) device in activeUsbId)
             {
                 //debug*********************************
-                DebugTextBox += $"{device.identifier}\n";
-                DebugTextBox += $"{device.instname}\n";
-                DebugTextBox += $"{device.usbid}\n";
-                DebugLog += "*IDN?" + Environment.NewLine;        //送信cmdをlogに追記(.AppendText(text)で追記)
+                this.LogDebug("*IDN?" + Environment.NewLine);
                 //*********************************debug
                 if (device.identifier == "リレー")
                 {
                     (response, isCheck) = await CheckFT2232HConnection(device.usbid);
                     if (!isCheck)
-                        message += $"{device.identifier} (FT2232H) との接続確認失敗\n";
+                        message += $"{device.identifier} (FT2232H) との接続確認失敗";
                 }
                 else
                 {
@@ -1011,7 +1015,7 @@ namespace TemperatureCharacteristics
                 }
                 isCheck &= isCheck;
                 //debug*********************************
-                DebugTextBox += $"{response}\n";
+                this.LogDebug($"応答{response}");
                 //*********************************debug
             }
             message = isCheck ? "接続確認問題なし" : "接続確認でエラー発生";
@@ -1225,7 +1229,7 @@ namespace TemperatureCharacteristics
 //#endif
                             if (!thermoSuccess)
                             {
-                                MeasurementStatus = $"サーモ 温度{targetTemp}℃ 設定失敗";
+                                this.LogDebug($"サーモ 温度{targetTemp}℃ 設定失敗");
                                 rows.Add(MeasurementStatus);
                                 continue;
                             }
@@ -1782,6 +1786,9 @@ namespace TemperatureCharacteristics
         private bool _debugUse8chOSC;
         public bool DebugUse8chOSC { get => _debugUse8chOSC; set { if (_debugUse8chOSC != value) { _debugUse8chOSC = value; OnPropertyChanged(); } } }
         private const int MaxLogLines = 100;
+        //private string _memoryUsage;
+        //private DispatcherTimer _memoryTimer;
+        //public string MemoryUsage { get => _memoryUsage; set { _memoryUsage = value; OnPropertyChanged(); } }
         private async Task DebugSend()
         {
             //*********************
@@ -1804,14 +1811,6 @@ namespace TemperatureCharacteristics
             string res = await _commQuery.Comm_query(usbid, cmd);
             DebugLog += $"{res} \n";   //応答をlogに追記
         }
-        private async Task DebugTemp()
-        {
-            //*********************
-            //定義
-            //*********************
-            string message = string.Empty;                                          //表示用変数初期化
-            MessageBox.Show(message);
-        }
         private void LogDebug(string message)
         {
             Application.Current.Dispatcher.Invoke(() =>
@@ -1832,6 +1831,13 @@ namespace TemperatureCharacteristics
                 }
             });
         }
+        //private void UpdateMemoryUsage()
+        //{
+        //    //long memoryBytes = GC.GetTotalMemory(false);
+        //    long memoryBytes = Process.GetCurrentProcess().WorkingSet64;
+        //    double memoryMB = memoryBytes / 1024.0 / 1024.0;
+        //    MemoryUsage = $"メモリ使用量: {memoryMB:F1} MB";
+        //}
         //debug用↑
         //**************************************************************************************************************************
     }
@@ -1857,39 +1863,39 @@ namespace TemperatureCharacteristics
     //*********************
     //再帰的にプロパティをコピー
     //*********************
-    public static class ViewModelMapper
-    {
-        public static void CopyProperties(object source, object target)
-        {
-            var sourceProps = source.GetType().GetProperties();
-            foreach (var prop in sourceProps)
-            {
-                var value = prop.GetValue(source);
-                if (value != null)
-                {
-                    // サブクラスなら再帰的にコピー
-                    if (prop.PropertyType.Namespace == "TemperatureCharacteristics.Models")
-                    {
-                        var targetSubProp = target.GetType().GetProperty(prop.Name);
-                        if (targetSubProp != null)
-                        {
-                            var targetSubInstance = targetSubProp.GetValue(target);
-                            if (targetSubInstance != null)
-                                CopyProperties(value, targetSubInstance);
-                        }
-                    }
-                    else
-                    {
-                        var targetProp = target.GetType().GetProperty(prop.Name);
-                        if (targetProp != null && targetProp.CanWrite)
-                        {
-                            targetProp.SetValue(target, value);
-                        }
-                    }
-                }
-            }
-        }
-    }
+    //public static class ViewModelMapper
+    //{
+    //    public static void CopyProperties(object source, object target)
+    //    {
+    //        var sourceProps = source.GetType().GetProperties();
+    //        foreach (var prop in sourceProps)
+    //        {
+    //            var value = prop.GetValue(source);
+    //            if (value != null)
+    //            {
+    //                // サブクラスなら再帰的にコピー
+    //                if (prop.PropertyType.Namespace == "TemperatureCharacteristics.Models")
+    //                {
+    //                    var targetSubProp = target.GetType().GetProperty(prop.Name);
+    //                    if (targetSubProp != null)
+    //                    {
+    //                        var targetSubInstance = targetSubProp.GetValue(target);
+    //                        if (targetSubInstance != null)
+    //                            CopyProperties(value, targetSubInstance);
+    //                    }
+    //                }
+    //                else
+    //                {
+    //                    var targetProp = target.GetType().GetProperty(prop.Name);
+    //                    if (targetProp != null && targetProp.CanWrite)
+    //                    {
+    //                        targetProp.SetValue(target, value);
+    //                    }
+    //                }
+    //            }
+    //        }
+    //    }
+    //}
 
     //*********************
     //コマンドの有効/無効制御

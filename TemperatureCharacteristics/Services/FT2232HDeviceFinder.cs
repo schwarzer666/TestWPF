@@ -90,7 +90,7 @@ namespace TemperatureCharacteristics.Services
             {
                 //MessageBox.Show($"FT2232H エラー: {ex.Message}");
                 return false;
-                throw new Exception($"# FATAL: FTDI アドレス取得でエラー: {ex.Message}");
+                throw new Exception($"# WARN: FTDI アドレス取得でエラー: {ex.Message}");
             }
         }
         //*************************************************

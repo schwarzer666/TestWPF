@@ -33,13 +33,13 @@ namespace TemperatureCharacteristics.Services
                         selectedPath = openFileDialog.FileName;
                     else
                     {
-                        log += "ファイル選択がキャンセルされました\n";
+                        log += "ファイル選択がキャンセルされました";
                         return (result, log, null);
                     }
                 }
                 if (!File.Exists(selectedPath))
                 {
-                    log += $"ファイル {selectedPath} が見つかりません\n";
+                    log += $"ファイル {selectedPath} が見つかりません";
                     return (result, log, null);
                 }
 
@@ -54,7 +54,7 @@ namespace TemperatureCharacteristics.Services
                 using var jsonDoc = JsonDocument.Parse(json);
                 if (!jsonDoc.RootElement.TryGetProperty("items", out var itemsElement) || itemsElement.ValueKind != JsonValueKind.Array)
                 {
-                    log += "JSON 形式エラー: 'items' 配列が見つかりません\n";
+                    log += "JSON 形式エラー: 'items' 配列が見つかりません";
                     return (result, log, null);
                 }
 
@@ -74,22 +74,22 @@ namespace TemperatureCharacteristics.Services
                         if (preset != null)
                             result.Add(preset);
                         else
-                            log += $"無効なプリセット型: {type}\n";
+                            log += $"無効なプリセット型: {type}";
                     }
                     else
-                        log += "JSON 形式エラー: 'Type' プロパティが見つかりません\n";
+                        log += "JSON 形式エラー: 'Type' プロパティが見つかりません";
                 }
-                log += $"設定を {result.Count} 件読み込みました (Path: {filePath})\n";
+                log += $"設定を {result.Count} 件読み込みました (Path: {filePath})";
                 return (result, log, selectedPath);
             }
             catch (JsonException ex)
             {
-                log += $"JSON パースエラー: {ex.Message}\n";
+                log += $"JSON パースエラー: {ex.Message}";
                 return (result, log, null);
             }
             catch (Exception ex)
             {
-                log += $"エラー: 設定の読み込みに失敗しました ({ex.Message})\n";
+                log += $"エラー: 設定の読み込みに失敗しました ({ex.Message})";
                 return (result, log, null);
             }
         }
@@ -104,7 +104,7 @@ namespace TemperatureCharacteristics.Services
             {
                 if (items == null || !items.Any())
                 {
-                    log += "エラー: 保存するデータがありません\n";
+                    log += "エラー: 保存するデータがありません";
                     return (false, log, null);
                 }
                 if (string.IsNullOrEmpty(filePath))
@@ -123,7 +123,7 @@ namespace TemperatureCharacteristics.Services
                         selectedPath = saveFileDialog.FileName;
                     else
                     {
-                        log += "保存がキャンセルされました\n";
+                        log += "保存がキャンセルされました";
                         return (false, log, null);
                     }
                 }
@@ -142,12 +142,12 @@ namespace TemperatureCharacteristics.Services
                 File.WriteAllText(selectedPath, json);
                 //書き込み後クリア
                 json = null;
-                log += $"設定を {filePath} に保存しました\n";
+                log += $"設定を {filePath} に保存しました";
                 return (true, log, selectedPath);
             }
             catch (Exception ex)
             {
-                log += $"エラー: 設定の保存に失敗しました ({ex.Message})\n";
+                log += $"エラー: 設定の保存に失敗しました ({ex.Message})";
                 return (false, log, null);
             }
         }
