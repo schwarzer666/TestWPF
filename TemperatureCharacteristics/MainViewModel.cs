@@ -1,5 +1,6 @@
 ﻿using DelayAction;                  //ActDelay.cs
 using DelayTab;                     //LayoutDelayTab.cs
+using GPIBcommunication;
 using InputCheck;                   //ErrCheck.cs
 using SweepAction;                  //ActSweep.cs
 using SweepTab;                     //LayoutSweepTab.cs
@@ -19,7 +20,6 @@ using TemperatureCharacteristics.Models;
 using TemperatureCharacteristics.Services;
 using ThermoAction;
 using USBcommunication;             //CommUSB.cs
-using USBID;                        //GetUSBID.cs
 using UTility;                      //Utility.cs
 using VIAction;                     //ActVI.cs
 using VITab;                        //LayoutVITab.cs
@@ -38,7 +38,9 @@ namespace TemperatureCharacteristics
         private readonly Thermo _thermoAct;
         private readonly InpCheck _errCheck;
         private readonly UT _utility;
-        private readonly GetUSBID _getUSBID;
+        private readonly USBcomm _getUSBID;
+        private readonly GPIBComm _getGPIBID;
+        private readonly FT2232HDeviceFinder _getFtdiID;
         private readonly USBcomm _commSend;
         private readonly USBcomm _commQuery;
         private readonly List<(CheckBox checkBox, ComboBox? textBox_ID, TextBox? textBox_NAME)> _measInst;   //フィールド変数meas_inst
@@ -47,6 +49,7 @@ namespace TemperatureCharacteristics
         private string _measurementStatus;
         private CancellationTokenSource? _cts;       //キャンセルトークンのソース
         private ObservableCollection<string> _usbIdList;
+        private ObservableCollection<string> _gpibList;
         private ObservableCollection<string> _ft2232hList;
         private string _debugTextBox;
         private string _debugLog;
@@ -257,6 +260,7 @@ namespace TemperatureCharacteristics
         }
         public string MeasurementStatus { get => _measurementStatus; set { _measurementStatus = value; OnPropertyChanged(); } }
         public ObservableCollection<string> USBIDList { get => _usbIdList; set { _usbIdList = value; OnPropertyChanged(); } }
+        public ObservableCollection<string> GPIBList { get => _gpibList; set { _gpibList = value; OnPropertyChanged(); } }
         public ObservableCollection<string> FT2232HList { get => _ft2232hList; set { _ft2232hList = value; OnPropertyChanged(); } }
         public ObservableCollection<PresetItemBase> PresetButtons { get => _presetButtons; private set { _presetButtons = value; OnPropertyChanged(); } }
         public ObservableCollection<PresetItemBase> FilteredPresetButtons { get => _filteredPresetButtons; private set { _filteredPresetButtons = value; OnPropertyChanged(); } }
@@ -331,13 +335,16 @@ namespace TemperatureCharacteristics
             _thermoAct = Thermo.Instance;
             _errCheck = InpCheck.Instance;
             _utility = UT.Instance;
-            _getUSBID = GetUSBID.Instance;
+            _getUSBID = USBcomm.Instance;
+            _getGPIBID = GPIBComm.Instance;
+            _getFtdiID = FT2232HDeviceFinder.Instance;
             _commSend = USBcomm.Instance;
             _commQuery = USBcomm.Instance;
             _measInst = measInst ?? throw new ArgumentNullException(nameof(measInst));
             _dataService = dataService ?? throw new ArgumentNullException(nameof(dataService));
 
             USBIDList = new ObservableCollection<string>();
+            GPIBList = new ObservableCollection<string>();
             FT2232HList = new ObservableCollection<string>();
             DebugTextBox = string.Empty;
             DebugLog = string.Empty;
@@ -880,18 +887,26 @@ namespace TemperatureCharacteristics
         private async Task GetUSBIDAsync()
         {
             string[] searchString = { "\r\n" };
-            string idList = await Task.Run(() => _getUSBID.USBIDList());
-            List<FTDeviceInfo> ftList = await Task.Run(() => _getUSBID.GetFT2232HList());
+            List<string> usbList = await Task.Run(() => _getUSBID.GetUSBIDList());
+            List<string> gpibLsit = await Task.Run(() => _getGPIBID.GetGPIBList());
+            List<FTDeviceInfo> ftList = await Task.Run(() => _getFtdiID.GetFT2232HList());
             //debug*********************************
-            DebugTextBox = idList;
+            DebugTextBox = string.Join(Environment.NewLine, usbList, gpibLsit, ftList);
             //*********************************debug
             USBIDList.Clear();
-            if (!string.IsNullOrEmpty(idList))
+            if (usbList != null && usbList.Count > 0)
             {
-                string[] ids = idList.Split(searchString, StringSplitOptions.RemoveEmptyEntries);
-                foreach (string id in ids)
+                foreach (string id in usbList)
                 {
                     USBIDList.Add(id.Trim());
+                }
+            }
+            GPIBList.Clear();
+            if (gpibLsit != null && gpibLsit.Count > 0)
+            {
+                foreach (string id in gpibLsit)
+                {
+                    GPIBList.Add(id.Trim());
                 }
             }
             FT2232HList.Clear();
@@ -899,10 +914,10 @@ namespace TemperatureCharacteristics
             {
                 foreach (var ft in ftList)
                 {
-                    FT2232HList.Add(ft.SerialNumber);  // シリアルのみ追加！
+                    FT2232HList.Add(ft.SerialNumber);  //シリアルのみ追加
                 }
             }
-            if (USBIDList.Count == 0 && FT2232HList.Count == 0)
+            if (USBIDList.Count == 0 && GPIBList.Count == 0)
             {
                 await Application.Current.Dispatcher.InvokeAsync(() =>
                 {

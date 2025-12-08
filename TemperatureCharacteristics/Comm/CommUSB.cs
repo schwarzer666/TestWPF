@@ -1,6 +1,5 @@
-﻿using Ivi.Visa.Interop;             //Visaライブラリ
-using System.Windows;
-using static System.Net.Mime.MediaTypeNames;
+﻿using System.Management;
+using Ivi.Visa.Interop;             //Visaライブラリ
 
 namespace USBcommunication
 {
@@ -11,6 +10,7 @@ namespace USBcommunication
         private IUsb? usbdev;                   //リモート解除用 null許容型
         private IGpib? gpibdev;                 //リモート解除用 null許容型
         private static USBcomm? instance;       //インスタンスをnull許容型(xxx?)として宣言し初期値がnullでも問題ないと表示
+        private readonly Guid usbClassGuid = new Guid("a9fdbb24-128a-11d5-9961-00108335e361");  //USB Test and Measurement Devices(IVI)のクラスGUID
 
         private USBcomm()
         {
@@ -390,6 +390,81 @@ namespace USBcommunication
             return response;
         }
 
+        //*************************************************
+        //アクセス：public
+        //戻り値：USB IDリスト
+        //機能：IVIに対応したUSB機器のアドレスを抽出(VISAから)
+        //*************************************************
+        public List<string> GetUSBIDList()
+        {
+            var usbList = new List<string>();
+
+            try
+            {
+                var rm = new ResourceManager();
+                string[] resources = rm.FindRsrc("?*INSTR");
+
+                foreach (string res in resources)
+                {
+                    if (res.StartsWith("USB"))
+                        usbList.Add(res);
+                }
+            }
+            catch
+            {
+                //VISAが失敗した場合はWMIで補完する
+                //呼び出した側にVISAが失敗した事を通知したい場合用
+            }
+
+            //VISAで見つからなかった場合はWMIで補完
+            if (usbList.Count == 0)
+                usbList.AddRange(GetUsbDevicesFromWmi());
+
+            return usbList;
+        }
+
+        //*************************************************
+        //アクセス：private
+        //戻り値：USB IDリスト
+        //機能：IVIに対応したUSB機器のアドレスを抽出(WMIから)
+        //*************************************************
+        private List<string> GetUsbDevicesFromWmi()
+        {
+            var list = new List<string>();
+
+            try
+            {
+                //Win32_PnPEntityからクラスGUIDでフィルタ
+                string query = $"SELECT * FROM Win32_PnPEntity WHERE ClassGuid = '{{{usbClassGuid}}}'";
+                using var searcher = new ManagementObjectSearcher(query);
+
+                foreach (ManagementObject? device in searcher.Get())
+                {
+                    string deviceId = device?["DeviceID"]?.ToString() ?? "";    // device["DeviceID"]があれば文字列形式で取り込み、なければnullになるので""
+                    if (string.IsNullOrEmpty(deviceId)) continue;
+
+                    int vidIndex = deviceId.IndexOf("VID_");                    //VID_の先頭番号(←4)を検索
+                    int pidIndex = deviceId.IndexOf("PID_");                    //PID_の先頭番号(←13)を検索
+
+                    if (vidIndex < 0 || pidIndex < 0) continue;
+
+                    string strVID = deviceId.Substring(vidIndex + 4, 4);        //USB\VID_(←4+4)を除いて4文字取得
+                    string strPID = deviceId.Substring(pidIndex + 4, 4);        //USB\VID_xxxx\PID_(←13+4)を除いて4文字取得
+
+                    string strSN = deviceId.Substring(pidIndex + 9);            //USB\VID_xxxx\PID_xxxx\(←13+9)を除いて残りを取得
+
+                    //VISA形式に整形
+                    string usbADD = $"USB::0x{strVID}::0x{strPID}::{strSN}::0::INSTR";
+                    list.Add(usbADD);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"FATAL: USB 一覧取得エラー: {ex.Message}", ex);
+            }
+
+            return list;
+        }
         //*************************************************
         //アクセス：private
         //戻り値：なし

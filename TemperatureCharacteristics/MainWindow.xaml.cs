@@ -2,7 +2,6 @@
 using System.Windows.Controls;
 using USBcommunication;             //CommUSB.cs
 using TemperatureCharacteristics.Services;
-using USBID;                        //GetUSBID.cs
 
 namespace TemperatureCharacteristics
 {
@@ -14,7 +13,7 @@ namespace TemperatureCharacteristics
     public partial class MainWindow : Window
     {
         private readonly MainViewModel _viewModel;
-        private readonly GetUSBID _getUSBID;         //フィールド変数getUSBID
+        private readonly USBcomm _getUSBID;         //フィールド変数getUSBID
         private readonly USBcomm _commSend;          //フィールド変数commSend
         private readonly USBcomm _commQuery;         //フィールド変数commQuery
         private readonly List<(CheckBox checkBox, ComboBox? textBox_ID, TextBox? textBox_NAME)> meas_inst; //フィールド変数meas_inst
@@ -22,7 +21,7 @@ namespace TemperatureCharacteristics
         public MainWindow()
         {
             InitializeComponent();
-            _getUSBID = GetUSBID.Instance;           //インスタンス生成(=初期化)を別クラス内で実行
+            _getUSBID = USBcomm.Instance;           //インスタンス生成(=初期化)を別クラス内で実行
             _commSend = USBcomm.Instance;            //インスタンス生成(=初期化)を別クラス内で実行
             _commQuery = USBcomm.Instance;           //インスタンス生成(=初期化)を別クラス内で実行
 
