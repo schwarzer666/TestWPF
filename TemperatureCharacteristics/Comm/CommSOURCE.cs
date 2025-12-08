@@ -89,7 +89,7 @@ namespace SOURCEcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# FATAL: Source イニシャルエラー: {ex.Message}");
+                    throw new Exception($"# WARN: Source イニシャルエラー: {ex.Message}");
                 }
             }
         }
@@ -132,7 +132,7 @@ namespace SOURCEcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# FATAL: Source OUTPUTonでエラー: {ex.Message}");
+                    throw new Exception($"# WARN: Source OUTPUTonでエラー: {ex.Message}");
                 }
             }
         }
@@ -169,7 +169,7 @@ namespace SOURCEcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# FATAL: Source OUTPUToffでエラー: {ex.Message}");
+                    throw new Exception($"# WARN: Source OUTPUToffでエラー: {ex.Message}");
                 }
             }
         }
@@ -211,7 +211,7 @@ namespace SOURCEcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# FATAL: Source SetValueでエラー: {ex.Message}");
+                    throw new Exception($"# WARN: Source SetValueでエラー: {ex.Message}");
                 }
             }
             
@@ -243,7 +243,7 @@ namespace SOURCEcommunication
                 catch (Exception ex)
                 {
                     //MessageBox.Show($"# Sourceリモート解除でエラー: {ex.Message}");
-                    throw new Exception($"# FATAL: Source リモート解除エラー {ex.Message}", ex);
+                    throw new Exception($"# WARN: Source リモート解除エラー {ex.Message}", ex);
                 }
             }
 
@@ -303,12 +303,12 @@ namespace SOURCEcommunication
                 await commSend.Comm_sendB(usbid, command);          //リモート解除を無効にして送信
                 bool comp = await Complete_Check(usbid, ct);                  //直前コマンド完了チェック
                 if (!comp)
-                    throw new Exception("# FATAL: リセット失敗");
+                    throw new Exception("# WARN: リセット失敗");
             }
             catch (Exception ex)        //例外処理
             {
                 //MessageBox.Show($"# Sourceリセットでエラーが発生しました: {ex.Message}");
-                throw new Exception($"# FATAL: Source リセットエラー {ex.Message}", ex);
+                throw new Exception($"# WARN: Source リセットエラー {ex.Message}", ex);
             }
         }
 

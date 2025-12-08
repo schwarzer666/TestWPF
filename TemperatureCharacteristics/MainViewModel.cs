@@ -254,7 +254,6 @@ namespace TemperatureCharacteristics
                     (NotYetCommand as RelayCommandAsync)?.RaiseCanExecuteChanged();
                     (OpenPopupCommand as RelayCommandAsync)?.RaiseCanExecuteChanged();
                     (SelectPresetCommand as RelayCommandAsync)?.RaiseCanExecuteChanged();
-                    DebugLog += $"IsRunning changed: {value}, SelectPresetCommand CanExecute: {!value && IsPopupOpen}\n";
                 }
             }
         }
@@ -633,6 +632,7 @@ namespace TemperatureCharacteristics
                 if (directProp?.CanWrite == true)
                 {
                     directProp.SetValue(target, value);
+                    //LogDebug($"Copied {prop.Name}={value} to {targetType.Name}");
                     debugLog?.Invoke($"Copied {prop.Name}={value} to {targetType.Name}");
                     continue;
                 }
@@ -1321,7 +1321,7 @@ namespace TemperatureCharacteristics
                             await _thermoAct.SetThermoTo25C(measInstData, _cts.Token, NoConfirmCallback);
                             MeasurementStatus = "終了処理サーモ温度25℃ 設定完了";
                         }
-                        catch (Exception ex)
+                        catch (Exception)
                         {
                             MeasurementStatus = "終了処理サーモ温度25℃ 設定失敗";
                         }
@@ -1781,6 +1781,7 @@ namespace TemperatureCharacteristics
         public bool DebugFinalFileFotterRemove { get => _debugFinalFileFotterRemove; set { if (_debugFinalFileFotterRemove != value) { _debugFinalFileFotterRemove = value; OnPropertyChanged(); } } }
         private bool _debugUse8chOSC;
         public bool DebugUse8chOSC { get => _debugUse8chOSC; set { if (_debugUse8chOSC != value) { _debugUse8chOSC = value; OnPropertyChanged(); } } }
+        private const int MaxLogLines = 100;
         private async Task DebugSend()
         {
             //*********************
@@ -1790,7 +1791,6 @@ namespace TemperatureCharacteristics
             string cmd = DebugSendCmd;
 
             DebugLog += $"{cmd} \n";   //送信cmdをlogに追記
-                                                        //最終行(最新)を表示はXAMLで対応
             await _commSend.Comm_send(usbid, cmd);
         }
         private async Task DebugQuery()
@@ -1801,10 +1801,8 @@ namespace TemperatureCharacteristics
             string usbid = DebugUSBID;
             string cmd = DebugSendCmd;
             DebugLog += $"{cmd} \n";   //送信cmdをlogに追記
-                                                        //最終行(最新)を表示はXAMLで対応
             string res = await _commQuery.Comm_query(usbid, cmd);
             DebugLog += $"{res} \n";   //応答をlogに追記
-                                                        //最終行(最新)を表示はXAMLで対応
         }
         private async Task DebugTemp()
         {
@@ -1813,6 +1811,26 @@ namespace TemperatureCharacteristics
             //*********************
             string message = string.Empty;                                          //表示用変数初期化
             MessageBox.Show(message);
+        }
+        private void LogDebug(string message)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                //新しいログを追加
+                DebugTextBox += $"{DateTime.Now:HH:mm:ss} {message}{Environment.NewLine}";
+
+                //行数が上限を超えたら古い行を削除
+                var lines = DebugTextBox.Split(
+                    new[] { Environment.NewLine },
+                    StringSplitOptions.RemoveEmptyEntries);
+
+                if (lines.Length > MaxLogLines)
+                {
+                    //最新 MaxLogLines 行だけ残す
+                    DebugTextBox = string.Join(Environment.NewLine,
+                        lines.Skip(lines.Length - MaxLogLines));
+                }
+            });
         }
         //debug用↑
         //**************************************************************************************************************************

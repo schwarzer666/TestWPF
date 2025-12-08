@@ -86,7 +86,7 @@ namespace USBcommunication
             catch (Exception ex)
             {
                 //MessageBox.Show($"# リモート解除でエラー: {ex.Message}");
-                throw new Exception($"# FATAL: リモート解除エラー {ex.Message}", ex);
+                throw new Exception($"# WARN: リモート解除エラー {ex.Message}", ex);
             }
         }
 
@@ -124,7 +124,7 @@ namespace USBcommunication
             catch (Exception ex)
             {
                 //MessageBox.Show($"# 送信コマンドエラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                throw new Exception($"# FATAL: コマンド送信エラー {ex.Message}", ex);
+                throw new Exception($"# WARN: コマンド送信エラー {ex.Message}", ex);
             }
             finally
             {
@@ -174,7 +174,7 @@ namespace USBcommunication
             catch (Exception ex)
             {
                 //MessageBox.Show($"# 送信コマンドエラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                throw new Exception($"# FATAL: コマンド送信エラー {ex.Message}", ex);
+                throw new Exception($"# WARN: コマンド送信エラー {ex.Message}", ex);
             }
             finally
             {
@@ -460,7 +460,7 @@ namespace USBcommunication
             }
             catch (Exception ex)
             {
-                throw new Exception($"FATAL: USB 一覧取得エラー: {ex.Message}", ex);
+                throw new Exception($"WARN: USB 一覧取得エラー: {ex.Message}", ex);
             }
 
             return list;
