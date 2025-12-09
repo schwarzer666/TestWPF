@@ -109,7 +109,7 @@ namespace OSCcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: OSC Initializeでエラー: {ex.Message}");
+                    throw new Exception($"# WARN: OSC Initializeでエラー: {ex.Message}\n");
                 }
             }
         }
@@ -170,7 +170,7 @@ namespace OSCcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: OSC 未使用CH表示OFFでエラー: {ex.Message}");
+                    throw new Exception($"# WARN: OSC 未使用CH表示OFFでエラー: {ex.Message}\n");
                 }
             }
             return compflag;
@@ -240,7 +240,7 @@ namespace OSCcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: OSC DelayMeasure設定でエラー: {ex.Message}");
+                    throw new Exception($"# WARN: OSC DelayMeasure設定でエラー: {ex.Message}\n");
                 }
             }
             return compflag;
@@ -285,7 +285,7 @@ namespace OSCcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: OSC MeasureDelay読み取りでエラー: {ex.Message}");
+                    throw new Exception($"# WARN: OSC MeasureDelay読み取りでエラー: {ex.Message}\n");
                 }
             }
             return Data;
@@ -337,7 +337,7 @@ namespace OSCcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: OSC Triggerd Checkでエラー: {ex.Message}");
+                    throw new Exception($"# WARN: OSC Triggerd Checkでエラー: {ex.Message}\n");
                 }
             }
             return compflag;
@@ -390,7 +390,7 @@ namespace OSCcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: OSC SingleRunでエラー: {ex.Message}");
+                    throw new Exception($"# WARN: OSC SingleRunでエラー: {ex.Message}\n");
                 }
             }
             return compflag;
@@ -442,7 +442,7 @@ namespace OSCcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: OSC Stopでエラー: {ex.Message}");
+                    throw new Exception($"# WARN: OSC Stopでエラー: {ex.Message}\n");
                 }
             }
             return compflag;
@@ -493,7 +493,7 @@ namespace OSCcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: OSC Runでエラー: {ex.Message}");
+                    throw new Exception($"# WARN: OSC Runでエラー: {ex.Message}\n");
                 }
             }
             return compflag;
@@ -526,7 +526,7 @@ namespace OSCcommunication
                 catch (Exception ex)
                 {
                     //MessageBox.Show($"# OSCリモート解除でエラー: {ex.Message}");
-                    throw new Exception($"# WARN: OSC リモート解除でエラー {ex.Message}", ex);
+                    throw new Exception($"# WARN: OSC リモート解除でエラー {ex.Message}\n", ex);
                 }
             }
 
@@ -684,12 +684,12 @@ namespace OSCcommunication
                 await commSend.Comm_sendB(usbid, command);               //リモート解除を無効にして送信
                 bool comp = await Complete_Check(usbid, ct);                //直前コマンド完了チェック
                 if (!comp)
-                    throw new Exception("# WARN: OSC リセット失敗");
+                    throw new Exception("# WARN: OSC リセット失敗\n");
             }
             catch (Exception ex)        //例外処理
             {
                 //MessageBox.Show($"# OSCリセットでエラーが発生しました: {ex.Message}");
-                throw new Exception($"# WARN: OSC リセットエラー {ex.Message}", ex);
+                throw new Exception($"# WARN: OSC リセットエラー {ex.Message}\n", ex);
             }
         }
 

@@ -50,7 +50,7 @@ namespace USBcommunication
             catch (Exception ex)
             {
                 //MessageBox.Show($"# 測定器通信確認エラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                res = $"# 測定器通信確認エラー: {ex.Message}";
+                res = $"# 測定器通信確認エラー: {ex.Message}\n";
                 response = false;
             }
             return (res, response);
@@ -81,12 +81,12 @@ namespace USBcommunication
             }
             catch(TimeoutException tex)
             {
-                throw new Exception($"# WARN: リモート解除タイムアウト {tex.Message}", tex);
+                throw new Exception($"# WARN: リモート解除タイムアウト {tex.Message}\n", tex);
             }
             catch (Exception ex)
             {
                 //MessageBox.Show($"# リモート解除でエラー: {ex.Message}");
-                throw new Exception($"# WARN: リモート解除エラー {ex.Message}", ex);
+                throw new Exception($"# WARN: リモート解除エラー {ex.Message}\n", ex);
             }
         }
 
@@ -119,12 +119,12 @@ namespace USBcommunication
             }
             catch (TimeoutException tex)
             {
-                throw new Exception($"# WARN: コマンド送信タイムアウト {tex.Message}", tex);
+                throw new Exception($"# WARN: コマンド送信タイムアウト {tex.Message}\n", tex);
             }
             catch (Exception ex)
             {
                 //MessageBox.Show($"# 送信コマンドエラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                throw new Exception($"# WARN: コマンド送信エラー {ex.Message}", ex);
+                throw new Exception($"# WARN: コマンド送信エラー {ex.Message}\n", ex);
             }
             finally
             {
@@ -169,12 +169,12 @@ namespace USBcommunication
             }
             catch (TimeoutException tex)
             {
-                throw new Exception($"# WARN: コマンド送信タイムアウト {tex.Message}", tex);
+                throw new Exception($"# WARN: コマンド送信タイムアウト {tex.Message}\n", tex);
             }
             catch (Exception ex)
             {
                 //MessageBox.Show($"# 送信コマンドエラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                throw new Exception($"# WARN: コマンド送信エラー {ex.Message}", ex);
+                throw new Exception($"# WARN: コマンド送信エラー {ex.Message}\n", ex);
             }
             finally
             {
@@ -236,7 +236,7 @@ namespace USBcommunication
                         if (attempt == maxAttempts - 1)
                         {
                             //MessageBox.Show($"# 送受信エラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                            response = $"# 送受信エラー: {ex.Message}";
+                            response = $"# 送受信エラー: {ex.Message}\n";
                             throw;
                         }
                         //100ms待って再試行
@@ -308,7 +308,7 @@ namespace USBcommunication
                         if (attempt == maxAttempts - 1)
                         {
                             //MessageBox.Show($"# 送受信エラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                            response = $"# 送受信エラー: {ex.Message}";
+                            response = $"# 送受信エラー: {ex.Message}\n";
                             throw;
                         }
                         //100ms待って再試行
@@ -359,7 +359,7 @@ namespace USBcommunication
                 catch (Exception ex)
                 {
                     //MessageBox.Show($"# 受信時測定器オープンエラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                    response = $"# 受信時測定器オープンエラー: {ex.Message}";
+                    response = $"# 受信時測定器オープンエラー: {ex.Message}\n";
                 }
                 try
                 {
@@ -372,7 +372,7 @@ namespace USBcommunication
                 {
                     //MessageBox.Show($"# 受信エラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
                     //response = "受信失敗";
-                    response = $"# 受信エラー: {ex.Message}";
+                    response = $"# 受信エラー: {ex.Message}\n";
                 }
             }
             finally
@@ -460,7 +460,7 @@ namespace USBcommunication
             }
             catch (Exception ex)
             {
-                throw new Exception($"WARN: USB 一覧取得エラー: {ex.Message}", ex);
+                throw new Exception($"WARN: USB 一覧取得エラー: {ex.Message}\n", ex);
             }
 
             return list;

@@ -109,7 +109,7 @@ namespace PGcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"PulseGenerator Initializeでエラー: {ex.Message}");
+                    throw new Exception($"PulseGenerator Initializeでエラー: {ex.Message}\n");
                 }
             }
         }
@@ -153,7 +153,7 @@ namespace PGcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"PulseGenerator HighLowVolt設定でエラー: {ex.Message}");
+                    throw new Exception($"PulseGenerator HighLowVolt設定でエラー: {ex.Message}\n");
                 }
             }
         }
@@ -195,7 +195,7 @@ namespace PGcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"PulseGenerator OUTPUTonでエラー: {ex.Message}");
+                    throw new Exception($"PulseGenerator OUTPUTonでエラー: {ex.Message}\n");
                 }
             }
         }
@@ -236,7 +236,7 @@ namespace PGcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"PulseGenerator OUTPUToffでエラー: {ex.Message}");
+                    throw new Exception($"PulseGenerator OUTPUToffでエラー: {ex.Message}\n");
                 }
             }
         }
@@ -277,7 +277,7 @@ namespace PGcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"PulseGenerator Trigger(CH)でエラー: {ex.Message}");
+                    throw new Exception($"PulseGenerator Trigger(CH)でエラー: {ex.Message}\n");
                 }
             }
         }
@@ -314,7 +314,7 @@ namespace PGcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"PulseGenerator Trigger(BUS)でエラー: {ex.Message}");
+                    throw new Exception($"PulseGenerator Trigger(BUS)でエラー: {ex.Message}\n");
                 }
             }
         }
@@ -359,7 +359,7 @@ namespace PGcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"PulseGenerator CH表示でエラー: {ex.Message}");
+                    throw new Exception($"PulseGenerator CH表示でエラー: {ex.Message}\n");
                 }
             }
         }
@@ -406,7 +406,7 @@ namespace PGcommunication
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"PulseGenerator RangeHoldでエラー: {ex.Message}");
+                    throw new Exception($"PulseGenerator RangeHoldでエラー: {ex.Message}\n");
                 }
             }
         }
@@ -437,7 +437,7 @@ namespace PGcommunication
                 catch (Exception ex)
                 {
                     //MessageBox.Show($"# PulseGeneratorリモート解除でエラー: {ex.Message}");
-                    throw new Exception($"# WARN: PG リモート解除でエラーでエラー {ex.Message}", ex);
+                    throw new Exception($"# WARN: PG リモート解除でエラーでエラー {ex.Message}\n", ex);
                 }
             }
 
@@ -499,12 +499,12 @@ namespace PGcommunication
                 await commSend.Comm_sendB(usbid, "*CLS");
                 bool comp = await Complete_Check(usbid, ct);                  //直前コマンド完了チェック
                 if (!comp)
-                    throw new Exception("# WARN: リセット失敗");
+                    throw new Exception("# WARN: リセット失敗\n");
             }
             catch (Exception ex)        //例外処理
             {
                 //MessageBox.Show($"# FATAL: PG リセットでエラーが発生しました: {ex.Message}");
-                throw new Exception($"# WARN: PG リセットエラー {ex.Message}", ex);
+                throw new Exception($"# WARN: PG リセットエラー {ex.Message}\n", ex);
             }
         }
         //*************************************************

@@ -897,9 +897,6 @@ namespace TemperatureCharacteristics
             List<string> usbList = await Task.Run(() => _getUSBID.GetUSBIDList());
             List<string> gpibLsit = await Task.Run(() => _getGPIBID.GetGPIBList());
             List<FTDeviceInfo> ftList = await Task.Run(() => _getFtdiID.GetFT2232HList());
-            //debug*********************************
-            this.LogDebug(string.Join(Environment.NewLine, usbList, gpibLsit, ftList));
-            //*********************************debug
             USBIDList.Clear();
             if (usbList != null && usbList.Count > 0)
             {
@@ -924,6 +921,10 @@ namespace TemperatureCharacteristics
                     FT2232HList.Add(ft.SerialNumber);  //シリアルのみ追加
                 }
             }
+            //debug*********************************
+            var allIds = USBIDList.Concat(GPIBList).Concat(FT2232HList);
+            this.LogDebug(string.Join(Environment.NewLine, allIds));
+            //*********************************debug
             if (USBIDList.Count == 0 && GPIBList.Count == 0)
             {
                 await Application.Current.Dispatcher.InvokeAsync(() =>
@@ -999,7 +1000,7 @@ namespace TemperatureCharacteristics
             foreach ((string identifier, string usbid, string instname) device in activeUsbId)
             {
                 //debug*********************************
-                this.LogDebug("*IDN?" + Environment.NewLine);
+                this.LogDebug($"{device.identifier}←*IDN?");
                 //*********************************debug
                 if (device.identifier == "リレー")
                 {
@@ -1015,7 +1016,7 @@ namespace TemperatureCharacteristics
                 }
                 isCheck &= isCheck;
                 //debug*********************************
-                this.LogDebug($"応答{response}");
+                this.LogDebug($"{device.identifier}→{response}");   //応答
                 //*********************************debug
             }
             message = isCheck ? "接続確認問題なし" : "接続確認でエラー発生";

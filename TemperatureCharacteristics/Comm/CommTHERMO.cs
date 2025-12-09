@@ -73,7 +73,7 @@ namespace THERMOcommunication
             }
             catch (Exception ex)        //例外処理
             {
-                throw new Exception($"# FATAL: THERMO イニシャルでエラーが発生しました: {ex.Message}");
+                throw new Exception($"# FATAL: THERMO イニシャルでエラーが発生しました: {ex.Message}\n");
             }
         }
 
@@ -131,7 +131,7 @@ namespace THERMOcommunication
                     {
                         await THERMO_Set_poin(thermoID, "1");
                         await THERMO_Set_flow(thermoID, "1");
-                        throw new TimeoutException("# FATAL: THERMO 温度が30分以内に安定しませんでした。");
+                        throw new TimeoutException("# FATAL: THERMO 温度が30分以内に安定しませんでした。\n");
                     }
                     await utility.Wait_Timer(500, cancellationToken);     //500ms毎にTHERMO_Responseメソッドでレジスタ確認
                 }
@@ -143,7 +143,7 @@ namespace THERMOcommunication
             catch (Exception ex)        //例外処理
             {
                 await THERMO_Set_flow(thermoID, "0");        //Flow OFF
-                throw new Exception($"# FATAL: THERMO 温度安定待ちでエラーが発生しました: {ex.Message}");
+                throw new Exception($"# FATAL: THERMO 温度安定待ちでエラーが発生しました: {ex.Message}\n");
             }
         }
         //*************************************************
@@ -181,7 +181,7 @@ namespace THERMOcommunication
             catch (Exception ex)        //例外処理
             {
                 await THERMO_Set_flow(thermoID, "0");        //Flow OFF
-                throw new Exception($"# FATAL: THERMO 温度安定待ちでエラーが発生しました: {ex.Message}");
+                throw new Exception($"# FATAL: THERMO 温度安定待ちでエラーが発生しました: {ex.Message}\n");
             }
             finally
             {
@@ -210,7 +210,7 @@ namespace THERMOcommunication
             catch (Exception ex)
             {
                 //MessageBox.Show($"# THERMO FlowOffでエラー: {ex.Message}");
-                throw new Exception($"# FATAL: THERMO FlowOffでエラー {ex.Message}", ex);
+                throw new Exception($"# FATAL: THERMO FlowOffでエラー {ex.Message}\n", ex);
             }
 
         }
@@ -235,7 +235,7 @@ namespace THERMOcommunication
             catch (Exception ex)
             {
                 //MessageBox.Show($"# THERMOリモート解除でエラー: {ex.Message}");
-                throw new Exception($"# FATAL: THERMO リモート解除エラー {ex.Message}", ex);
+                throw new Exception($"# FATAL: THERMO リモート解除エラー {ex.Message}\n", ex);
             }
 
         }
