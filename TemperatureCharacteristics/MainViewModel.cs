@@ -1263,7 +1263,29 @@ namespace TemperatureCharacteristics
                 }
                 catch (Exception ex)
                 {
-                    rows.Add($"# 測定エラー: {ex.Message}");
+                    if (ex.Message.Contains("WARN"))
+                    {
+                        //警告レベル → ログに残すが処理は継続
+                        rows.Add($"# 警告: {ex.Message}");
+                        this.LogDebug($"警告: {ex.Message}");
+                    }
+                    else if (ex.Message.Contains("FATAL"))
+                    {
+                        //致命的レベル → 処理を停止
+                        rows.Add($"# 致命的エラー: {ex.Message}");
+                        this.LogDebug($"致命的: {ex.Message}");
+
+                        //測定を強制終了
+                        IsRunning = false;
+                        _cts?.Cancel();
+                        return; //メソッドを終了→finally実行
+                    }
+                    else
+                    {
+                        //その他の例外は従来通りエラー扱い
+                        rows.Add($"# 測定エラー: {ex.Message}");
+                        this.LogDebug($"例外: {ex.Message}");
+                    }
                 }
                 finally
                 { 
