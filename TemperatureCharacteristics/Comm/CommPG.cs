@@ -1,6 +1,6 @@
-﻿using System.Windows;
-using USBcommunication;             //CommUSB.cs
+﻿using USBcommunication;             //CommUSB.cs
 using UTility;                      //Utility.cs
+using TemperatureCharacteristics.Exceptions;    //例外スローの為
 
 namespace PGcommunication
 {
@@ -107,9 +107,17 @@ namespace PGcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:PG Initializeでエラー: {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:PG Initializeでエラー: {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"PulseGenerator Initializeでエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# 未分類エラー:PG Initializeでエラー: {ex.Message}\n");
                 }
             }
         }
@@ -151,9 +159,17 @@ namespace PGcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:PG HighLowVolt設定でエラー: {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:PG HighLowVolt設定でエラー: {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"PulseGenerator HighLowVolt設定でエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# 未分類エラー:PG HighLowVolt設定でエラー: {ex.Message}\n");
                 }
             }
         }
@@ -193,9 +209,17 @@ namespace PGcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:PG OUTPUTonでエラー: {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:PG OUTPUTonでエラー: {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"PulseGenerator OUTPUTonでエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# 未分類エラー:PG OUTPUTonでエラー: {ex.Message}\n");
                 }
             }
         }
@@ -234,9 +258,17 @@ namespace PGcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:PG OUTPUToffでエラー: {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:PG OUTPUToffでエラー: {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"PulseGenerator OUTPUToffでエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# 未分類エラー:PG OUTPUToffでエラー: {ex.Message}\n");
                 }
             }
         }
@@ -275,9 +307,17 @@ namespace PGcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:PG Trigger(CH)でエラー: {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:PG Trigger(CH)でエラー: {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"PulseGenerator Trigger(CH)でエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# 未分類エラー:PG Trigger(CH)でエラー: {ex.Message}\n");
                 }
             }
         }
@@ -312,9 +352,17 @@ namespace PGcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:PG Trigger(BUS)でエラー: {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:PG Trigger(BUS)でエラー: {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"PulseGenerator Trigger(BUS)でエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# 未分類エラー:PG Trigger(BUS)でエラー: {ex.Message}\n");
                 }
             }
         }
@@ -357,9 +405,17 @@ namespace PGcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:PG CH表示でエラー: {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:PG CH表示でエラー: {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"PulseGenerator CH表示でエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# UNKNOWN:PG CH表示でエラー: {ex.Message}\n");
                 }
             }
         }
@@ -404,9 +460,17 @@ namespace PGcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:PG RangeHoldでエラー: {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:PG RangeHoldでエラー: {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"PulseGenerator RangeHoldでエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# UNKNOWN:PG RangeHoldでエラー: {ex.Message}\n");
                 }
             }
         }
@@ -434,10 +498,18 @@ namespace PGcommunication
                     //**********************************
                     await commSend.Remote_OFF(pgUSBID);
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:PG リモート解除でエラーでエラー {ex.Message}\n", ex);
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:PG リモート解除でエラーでエラー {ex.Message}\n", ex);
+                }
                 catch (Exception ex)
                 {
                     //MessageBox.Show($"# PulseGeneratorリモート解除でエラー: {ex.Message}");
-                    throw new Exception($"# WARN: PG リモート解除でエラーでエラー {ex.Message}\n", ex);
+                    throw new MeasFatalException($"# UNKNOWN:PG リモート解除でエラーでエラー {ex.Message}\n", ex);
                 }
             }
 
@@ -492,20 +564,12 @@ namespace PGcommunication
         private async Task PG_Reset(string usbid, CancellationToken ct)
         {
             string command = "*RST";
-            try
-            {
-                await commSend.Comm_sendB(usbid, command);          //リモート解除を無効にして送信
-                await timer_ms.Wait_Timer(3500, ct);                     //2000ms wait
-                await commSend.Comm_sendB(usbid, "*CLS");
-                bool comp = await Complete_Check(usbid, ct);                  //直前コマンド完了チェック
-                if (!comp)
-                    throw new Exception("# WARN: リセット失敗\n");
-            }
-            catch (Exception ex)        //例外処理
-            {
-                //MessageBox.Show($"# FATAL: PG リセットでエラーが発生しました: {ex.Message}");
-                throw new Exception($"# WARN: PG リセットエラー {ex.Message}\n", ex);
-            }
+            await commSend.Comm_sendB(usbid, command);          //リモート解除を無効にして送信
+            await timer_ms.Wait_Timer(3500, ct);                     //3500ms wait
+            //await commSend.Comm_sendB(usbid, "*CLS");
+            bool comp = await Complete_Check(usbid, ct);                  //直前コマンド完了チェック
+            if (!comp)
+                throw new MeasWarningException("# WARN:PG リセット完了待ちでエラー\n");
         }
         //*************************************************
         //アクセス：private

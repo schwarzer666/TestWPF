@@ -1,7 +1,6 @@
-﻿using System.Text;
-using System.Windows;
-using USBcommunication;             //CommUSB.cs
+﻿using USBcommunication;             //CommUSB.cs
 using UTility;                      //Utility.cs
+using TemperatureCharacteristics.Exceptions;    //例外スローの為
 
 namespace OSCcommunication
 {
@@ -107,9 +106,17 @@ namespace OSCcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:OSC Initializeでエラー: {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:OSC Initializeでエラー: {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: OSC Initializeでエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# UNKNOWN:OSC Initializeでエラー: {ex.Message}\n");
                 }
             }
         }
@@ -168,9 +175,17 @@ namespace OSCcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:OSC 未使用CH表示OFFでエラー: {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:OSC 未使用CH表示OFFでエラー: {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: OSC 未使用CH表示OFFでエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# UNKNOWN:OSC 未使用CH表示OFFでエラー: {ex.Message}\n");
                 }
             }
             return compflag;
@@ -238,9 +253,17 @@ namespace OSCcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:OSC DelayMeasure設定でエラー: {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:OSC DelayMeasure設定でエラー: {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: OSC DelayMeasure設定でエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# UNKNOWN:OSC DelayMeasure設定でエラー: {ex.Message}\n");
                 }
             }
             return compflag;
@@ -283,9 +306,17 @@ namespace OSCcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:OSC MeasureDelay読み取りでエラー: {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:OSC MeasureDelay読み取りでエラー: {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: OSC MeasureDelay読み取りでエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# UNKNOWN:OSC MeasureDelay読み取りでエラー: {ex.Message}\n");
                 }
             }
             return Data;
@@ -335,9 +366,17 @@ namespace OSCcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:OSC Triggerd Checkでエラー: {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:OSC Triggerd Checkでエラー: {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: OSC Triggerd Checkでエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# WARN:OSC Triggerd Checkでエラー: {ex.Message}\n");
                 }
             }
             return compflag;
@@ -388,9 +427,17 @@ namespace OSCcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:OSC SingleRunでエラー: {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:OSC SingleRunでエラー: {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: OSC SingleRunでエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# UNKNOWN:OSC SingleRunでエラー: {ex.Message}\n");
                 }
             }
             return compflag;
@@ -440,9 +487,17 @@ namespace OSCcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:OSC Stopでエラー: {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:OSC Stopでエラー: {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: OSC Stopでエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# UNKNOWN: OSC Stopでエラー: {ex.Message}\n");
                 }
             }
             return compflag;
@@ -491,9 +546,17 @@ namespace OSCcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:OSC Runでエラー: {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:OSC Runでエラー: {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: OSC Runでエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# UNKNOWN:OSC Runでエラー: {ex.Message}\n");
                 }
             }
             return compflag;
@@ -523,10 +586,18 @@ namespace OSCcommunication
                     //**********************************
                     await commSend.Remote_OFF(oscUSBID);
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:OSC リモート解除でエラー {ex.Message}\n", ex);
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:OSC リモート解除でエラー {ex.Message}\n", ex);
+                }
                 catch (Exception ex)
                 {
                     //MessageBox.Show($"# OSCリモート解除でエラー: {ex.Message}");
-                    throw new Exception($"# WARN: OSC リモート解除でエラー {ex.Message}\n", ex);
+                    throw new MeasFatalException($"# UNKNOWN:OSC リモート解除でエラー {ex.Message}\n", ex);
                 }
             }
 
@@ -679,18 +750,10 @@ namespace OSCcommunication
         private async Task OSC_Reset(string usbid, CancellationToken ct)
         {
             string command = "*RST";
-            try
-            {
-                await commSend.Comm_sendB(usbid, command);               //リモート解除を無効にして送信
-                bool comp = await Complete_Check(usbid, ct);                //直前コマンド完了チェック
-                if (!comp)
-                    throw new Exception("# WARN: OSC リセット失敗\n");
-            }
-            catch (Exception ex)        //例外処理
-            {
-                //MessageBox.Show($"# OSCリセットでエラーが発生しました: {ex.Message}");
-                throw new Exception($"# WARN: OSC リセットエラー {ex.Message}\n", ex);
-            }
+            await commSend.Comm_sendB(usbid, command);               //リモート解除を無効にして送信
+            bool comp = await Complete_Check(usbid, ct);                //直前コマンド完了チェック
+            if (!comp)
+                throw new MeasWarningException("# WARN:OSC リセット失敗\n");
         }
 
         //*************************************************

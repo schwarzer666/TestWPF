@@ -1,6 +1,6 @@
-﻿using System.Windows;
-using USBcommunication;             //CommUSB.cs
+﻿using USBcommunication;             //CommUSB.cs
 using UTility;                      //Utility.cs
+using TemperatureCharacteristics.Exceptions;    //例外スローの為
 
 namespace THERMOcommunication
 {
@@ -71,9 +71,17 @@ namespace THERMOcommunication
             {
                 throw;      //キャンセル要求を検知したら呼び出し元に通知
             }
+            catch (MeasWarningException ex)        //例外処理
+            {
+                throw new MeasFatalException($"# FATAL:THERMO イニシャルでエラーが発生しました: {ex.Message}\n");
+            }
+            catch (MeasFatalException ex)        //例外処理
+            {
+                throw new MeasFatalException($"# FATAL:THERMO イニシャルでエラーが発生しました: {ex.Message}\n");
+            }
             catch (Exception ex)        //例外処理
             {
-                throw new Exception($"# FATAL: THERMO イニシャルでエラーが発生しました: {ex.Message}\n");
+                throw new MeasFatalException($"# FATAL:THERMO イニシャルでエラーが発生しました: {ex.Message}\n");
             }
         }
 
@@ -131,7 +139,7 @@ namespace THERMOcommunication
                     {
                         await THERMO_Set_poin(thermoID, "1");
                         await THERMO_Set_flow(thermoID, "1");
-                        throw new TimeoutException("# FATAL: THERMO 温度が30分以内に安定しませんでした。\n");
+                        throw new TimeoutException("# FATAL:THERMO 温度が30分以内に安定しませんでした。\n");
                     }
                     await utility.Wait_Timer(500, cancellationToken);     //500ms毎にTHERMO_Responseメソッドでレジスタ確認
                 }
@@ -140,10 +148,20 @@ namespace THERMOcommunication
             {
                 throw;      //キャンセル要求を検知したら呼び出し元に通知
             }
+            catch (MeasWarningException ex)        //例外処理
+            {
+                await THERMO_Set_flow(thermoID, "0");        //Flow OFF
+                throw new MeasFatalException($"# FATAL:THERMO 温度安定待ちでエラーが発生しました: {ex.Message}\n");
+            }
+            catch (MeasFatalException ex)        //例外処理
+            {
+                await THERMO_Set_flow(thermoID, "0");        //Flow OFF
+                throw new MeasFatalException($"# FATAL:THERMO 温度安定待ちでエラーが発生しました: {ex.Message}\n");
+            }
             catch (Exception ex)        //例外処理
             {
                 await THERMO_Set_flow(thermoID, "0");        //Flow OFF
-                throw new Exception($"# FATAL: THERMO 温度安定待ちでエラーが発生しました: {ex.Message}\n");
+                throw new MeasFatalException($"# FATAL:THERMO 温度安定待ちでエラーが発生しました: {ex.Message}\n");
             }
         }
         //*************************************************
@@ -178,10 +196,20 @@ namespace THERMOcommunication
             {
                 throw;      //キャンセル要求を検知したら呼び出し元に通知
             }
+            catch (MeasWarningException ex)        //例外処理
+            {
+                await THERMO_Set_flow(thermoID, "0");        //Flow OFF
+                throw new MeasFatalException($"# FATAL:THERMO 温度安定待ちでエラーが発生しました: {ex.Message}\n");
+            }
+            catch (MeasFatalException ex)        //例外処理
+            {
+                await THERMO_Set_flow(thermoID, "0");        //Flow OFF
+                throw new MeasFatalException($"# FATAL:THERMO 温度安定待ちでエラーが発生しました: {ex.Message}\n");
+            }
             catch (Exception ex)        //例外処理
             {
                 await THERMO_Set_flow(thermoID, "0");        //Flow OFF
-                throw new Exception($"# FATAL: THERMO 温度安定待ちでエラーが発生しました: {ex.Message}\n");
+                throw new MeasFatalException($"# FATAL:THERMO 温度安定待ちでエラーが発生しました: {ex.Message}\n");
             }
             finally
             {
@@ -207,10 +235,18 @@ namespace THERMOcommunication
                 //**********************************
                 await THERMO_Set_flow(thermoID, "0");        //Flow OFF
             }
+            catch (MeasWarningException ex)
+            {
+                throw new MeasFatalException($"# FATAL:THERMO FlowOffでエラー {ex.Message}\n", ex);
+            }
+            catch (MeasFatalException ex)
+            {
+                throw new MeasFatalException($"# FATAL:THERMO FlowOffでエラー {ex.Message}\n", ex);
+            }
             catch (Exception ex)
             {
                 //MessageBox.Show($"# THERMO FlowOffでエラー: {ex.Message}");
-                throw new Exception($"# FATAL: THERMO FlowOffでエラー {ex.Message}\n", ex);
+                throw new MeasFatalException($"# FATAL:THERMO FlowOffでエラー {ex.Message}\n", ex);
             }
 
         }
@@ -232,10 +268,18 @@ namespace THERMOcommunication
                 //**********************************
                 await commSend.Remote_OFF(thermoID);
             }
+            catch (MeasWarningException ex)
+            {
+                throw new MeasWarningException($"# WARN:THERMO リモート解除エラー {ex.Message}\n", ex);
+            }
+            catch (MeasFatalException ex)
+            {
+                throw new MeasFatalException($"# FATAL:THERMO リモート解除エラー {ex.Message}\n", ex);
+            }
             catch (Exception ex)
             {
                 //MessageBox.Show($"# THERMOリモート解除でエラー: {ex.Message}");
-                throw new Exception($"# FATAL: THERMO リモート解除エラー {ex.Message}\n", ex);
+                throw new MeasFatalException($"# UNKNOWN:THERMO リモート解除エラー {ex.Message}\n", ex);
             }
 
         }

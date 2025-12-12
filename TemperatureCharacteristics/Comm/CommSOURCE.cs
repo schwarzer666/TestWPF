@@ -1,6 +1,6 @@
-﻿using System.Windows;
-using USBcommunication;             //CommUSB.cs
+﻿using USBcommunication;             //CommUSB.cs
 using UTility;                      //Utility.cs
+using TemperatureCharacteristics.Exceptions;    //例外スローの為
 
 namespace SOURCEcommunication
 {
@@ -87,9 +87,17 @@ namespace SOURCEcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:Source イニシャルエラー\n {ex.Message}");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:Source イニシャルエラー\n {ex.Message}");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: Source イニシャルエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# UNKNOWN:Source イニシャルエラー\n {ex.Message}");
                 }
             }
         }
@@ -130,9 +138,17 @@ namespace SOURCEcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:Source OUTPUTonでエラー\n {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:Source OUTPUTonでエラー\n {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: Source OUTPUTonでエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# UNKNOWN:Source OUTPUTonでエラー\n {ex.Message}\n");
                 }
             }
         }
@@ -167,9 +183,17 @@ namespace SOURCEcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:Source OUTPUToffでエラー\n {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:Source OUTPUToffでエラー\n {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: Source OUTPUToffでエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# UNKNOWN:Source OUTPUToffでエラー\n {ex.Message}\n");
                 }
             }
         }
@@ -209,9 +233,17 @@ namespace SOURCEcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:Source SetValueでエラー\n {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:Source SetValueでエラー\n {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: Source SetValueでエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# UNKNOWN:Source SetValueでエラー\n {ex.Message}\n");
                 }
             }
             
@@ -240,10 +272,18 @@ namespace SOURCEcommunication
                     //**********************************
                     await commSend.Remote_OFF(sourceUSBID);
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:Source リモート解除エラー\n {ex.Message}\n", ex);
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:Source リモート解除エラー\n {ex.Message}\n", ex);
+                }
                 catch (Exception ex)
                 {
                     //MessageBox.Show($"# Sourceリモート解除でエラー: {ex.Message}");
-                    throw new Exception($"# WARN: Source リモート解除エラー {ex.Message}\n", ex);
+                    throw new MeasFatalException($"# UNKNOWN:Source リモート解除エラー\n {ex.Message}\n", ex);
                 }
             }
 
@@ -298,18 +338,10 @@ namespace SOURCEcommunication
         private async Task SOURCE_Reset(string usbid, CancellationToken ct)
         {
             string command = "*RST";
-            try
-            {
-                await commSend.Comm_sendB(usbid, command);          //リモート解除を無効にして送信
-                bool comp = await Complete_Check(usbid, ct);                  //直前コマンド完了チェック
-                if (!comp)
-                    throw new Exception("# WARN: Source リセット失敗\n");
-            }
-            catch (Exception ex)        //例外処理
-            {
-                //MessageBox.Show($"# Sourceリセットでエラーが発生しました: {ex.Message}");
-                throw new Exception($"# WARN: Source リセットエラー {ex.Message}\n", ex);
-            }
+            await commSend.Comm_sendB(usbid, command);          //リモート解除を無効にして送信
+            bool comp = await Complete_Check(usbid, ct);                  //直前コマンド完了チェック
+            if (!comp)
+                throw new MeasWarningException("# WARN:Source リセット失敗\n");
         }
 
         //*************************************************

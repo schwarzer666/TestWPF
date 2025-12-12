@@ -7,6 +7,7 @@ using SOURCEcommunication;          //CommSOURCE.cs
 using System.Globalization;         //NumberStyles.Float, CultureInfo.InvariantCultureを使用するのに必要
 using TemperatureCharacteristics.Act;
 using UTility;                      //Utility.cs
+using TemperatureCharacteristics.Exceptions;    //例外スロー
 
 namespace DelayAction
 {
@@ -621,6 +622,30 @@ namespace DelayAction
                     await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
                 }
                 throw;          //キャンセル要求を検知したら呼び出し元に通知
+            }
+            catch (MeasWarningException ex)
+            {
+                delayData.Add($"# Delay動作中に警告レベルエラーが発生しました: {ex.Message}");
+                csvRows.Add($"# {string.Join(" ", delayData).Replace(Environment.NewLine, " ")}");
+                //処理中のタブデータがあれば保存
+                if (tabCsvRows.Any() && tabCsvRows.Count > 1)
+                {
+                    string tabNameFilePath = baseTempFilePath.Replace("_DelayData_", $"_ErrorDelayData_{currentTabName}_");
+                    await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
+                }
+                return csvRows;
+            }
+            catch (MeasFatalException ex)
+            {
+                delayData.Add($"# Delay動作中に致命レベルエラーが発生しました: {ex.Message}");
+                csvRows.Add($"# {string.Join(" ", delayData).Replace(Environment.NewLine, " ")}");
+                //処理中のタブデータがあれば保存
+                if (tabCsvRows.Any() && tabCsvRows.Count > 1)
+                {
+                    string tabNameFilePath = baseTempFilePath.Replace("_DelayData_", $"_ErrorDelayData_{currentTabName}_");
+                    await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
+                }
+                return csvRows;
             }
             catch (Exception ex)
             {

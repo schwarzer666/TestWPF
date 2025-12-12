@@ -8,6 +8,8 @@ using System.Globalization;         //NumberStyles.Float, CultureInfo.InvariantC
 using System.Text;
 using UTility;                      //Utility.cs
 using TemperatureCharacteristics.Act;
+using TemperatureCharacteristics.Exceptions;
+using System.Reflection.Metadata.Ecma335;
 
 namespace SweepAction
 {
@@ -1249,6 +1251,30 @@ namespace SweepAction
                     await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
                 }
                 throw;          //キャンセル要求を検知したら呼び出し元に通知
+            }
+            catch (MeasWarningException ex)
+            {
+                sweepData.Add($"# Sweep動作中に警告レベルエラーが発生しました: {ex.Message}");
+                csvRows.Add($"# {string.Join(" ", sweepData).Replace(Environment.NewLine, " ")}");
+                //処理中のタブデータがあれば保存
+                if (tabCsvRows.Any() && tabCsvRows.Count > 1)
+                {
+                    string tabNameFilePath = baseTempFilePath.Replace("_SweepData_", $"_ErrorSweepData_{currentTabName}_");
+                    await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
+                }
+                return csvRows;
+            }
+            catch (MeasFatalException ex)
+            {
+                sweepData.Add($"# Sweep動作中に致命レベルエラーが発生しました: {ex.Message}");
+                csvRows.Add($"# {string.Join(" ", sweepData).Replace(Environment.NewLine, " ")}");
+                //処理中のタブデータがあれば保存
+                if (tabCsvRows.Any() && tabCsvRows.Count > 1)
+                {
+                    string tabNameFilePath = baseTempFilePath.Replace("_SweepData_", $"_ErrorSweepData_{currentTabName}_");
+                    await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
+                }
+                return csvRows;
             }
             catch (Exception ex)
             {

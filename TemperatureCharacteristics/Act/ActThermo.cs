@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading;
 using THERMOcommunication;          //CommTHERMO.cs
 using UTility;                      //Utility.cs
+using TemperatureCharacteristics.Exceptions;    //例外スロー
 
 namespace ThermoAction
 {
@@ -62,6 +63,16 @@ namespace ThermoAction
                 log.Add("# サーモストリーマ初期設定がキャンセルされました。");
                 throw;          //キャンセル要求を検知したら呼び出し元に通知
             }
+            catch (MeasWarningException ex)
+            {
+                log.Add($"サーモストリーマ初期設定中に警告レベルエラーが発生しました: {ex.Message}");
+                return (false, log);
+            }
+            catch (MeasFatalException ex)
+            {
+                log.Add($"サーモストリーマ初期設定中に致命レベルエラーが発生しました: {ex.Message}");
+                return (false, log);
+            }
             catch (Exception ex)
             {
                 log.Add($"サーモストリーマ初期設定中にエラーが発生しました: {ex.Message}");
@@ -106,6 +117,16 @@ namespace ThermoAction
             catch (TimeoutException tex)
             {
                 log.Add($"# 温度安定待ちタイムアウト: {tex.Message}");
+                return (false, log);
+            }
+            catch (MeasWarningException ex)
+            {
+                log.Add($"# 温度設定中に警告レベルエラーが発生しました: {ex.Message}");
+                return (false, log);
+            }
+            catch (MeasFatalException ex)
+            {
+                log.Add($"# 温度設定中に致命レベルエラーが発生しました: {ex.Message}");
                 return (false, log);
             }
             catch (Exception ex)

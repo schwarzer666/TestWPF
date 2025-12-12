@@ -5,6 +5,7 @@ using System.Globalization;         //NumberStyles.Float, CultureInfo.InvariantC
 using System.Text;
 using System.Windows.Forms;
 using TemperatureCharacteristics.Act;
+using TemperatureCharacteristics.Exceptions;    //例外スロー
 using UTility;                      //Utility.cs
 using VITab;                        //LayoutVITab.cs
 
@@ -650,6 +651,30 @@ namespace VIAction
                     await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
                 }
                 throw;          //キャンセル要求を検知したら呼び出し元に通知
+            }
+            catch (MeasWarningException ex)
+            {
+                viData.Add($"# VI動作中に警告レベルエラーが発生しました: {ex.Message}");
+                csvRows.Add($"# {string.Join(" ", viData).Replace(Environment.NewLine, " ")}");
+                //処理中のタブデータがあれば保存
+                if (tabCsvRows.Any() && tabCsvRows.Count > 1)
+                {
+                    string tabNameFilePath = baseTempFilePath.Replace("_VIData_", $"_ErrorVIData_{currentTabName}_");
+                    await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
+                }
+                return csvRows;
+            }
+            catch (MeasFatalException ex)
+            {
+                viData.Add($"# VI動作中に致命レベルエラーが発生しました: {ex.Message}");
+                csvRows.Add($"# {string.Join(" ", viData).Replace(Environment.NewLine, " ")}");
+                //処理中のタブデータがあれば保存
+                if (tabCsvRows.Any() && tabCsvRows.Count > 1)
+                {
+                    string tabNameFilePath = baseTempFilePath.Replace("_VIData_", $"_ErrorVIData_{currentTabName}_");
+                    await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
+                }
+                return csvRows;
             }
             catch (Exception ex)
             {

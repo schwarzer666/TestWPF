@@ -2,6 +2,7 @@
 using System.Windows;
 using USBcommunication;             //CommUSB.cs
 using UTility;                      //Utility.cs
+using TemperatureCharacteristics.Exceptions;    //例外スローの為
 
 namespace MEASUREcommunication
 {
@@ -99,9 +100,17 @@ namespace MEASUREcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:DMM Initializeでエラー: {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:DMM Initializeでエラー: {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: DMM Initializeでエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# UNKNOWN:DMM Initializeでエラー: {ex.Message}\n");
                 }
             }
         }
@@ -137,9 +146,17 @@ namespace MEASUREcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:DMM トリガ受付待機遷移でエラー: {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:DMM トリガ受付待機遷移でエラー: {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: DMM トリガ受付待機遷移でエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# UNKNOWN:DMM トリガ受付待機遷移でエラー: {ex.Message}\n");
                 }
             }
         }
@@ -176,9 +193,17 @@ namespace MEASUREcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:DMM BUSトリガ発生でエラー: {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:DMM BUSトリガ発生でエラー: {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: DMM BUSトリガ発生でエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# UNKNOWN:DMM BUSトリガ発生でエラー: {ex.Message}\n");
                 }
             }
         }
@@ -216,9 +241,17 @@ namespace MEASUREcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:DMM Data読み取りでエラー: {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:DMM Data読み取りでエラー: {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: DMM Data読み取りでエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# UNKNOWN:DMM Data読み取りでエラー: {ex.Message}\n");
                 }
             }
             return Data;
@@ -257,9 +290,17 @@ namespace MEASUREcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:DMM Data読み取りでエラー: {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL:DMM Data読み取りでエラー: {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: DMM Data読み取りでエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# UNKNOWN:DMM Data読み取りでエラー: {ex.Message}\n");
                 }
             }
             return Data;
@@ -300,9 +341,17 @@ namespace MEASUREcommunication
                 {
                     throw;      //キャンセル要求を検知したら呼び出し元に通知
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:DMM BUSトリガ発生でエラー: {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# WARN:DMM BUSトリガ発生でエラー: {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: DMM BUSトリガ発生でエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# UNKNOWN:DMM BUSトリガ発生でエラー: {ex.Message}\n");
                 }
             }
         }
@@ -330,9 +379,17 @@ namespace MEASUREcommunication
                     //**********************************
                     await commSend.Remote_OFF(dmmUSBID);
                 }
+                catch (MeasWarningException ex)
+                {
+                    throw new MeasWarningException($"# WARN:DMM リモート解除でエラー: {ex.Message}\n");
+                }
+                catch (MeasFatalException ex)
+                {
+                    throw new MeasFatalException($"# FATAL: MMリモート解除でエラー: {ex.Message}\n");
+                }
                 catch (Exception ex)
                 {
-                    throw new Exception($"# WARN: DMM リモート解除でエラー: {ex.Message}\n");
+                    throw new MeasFatalException($"# UNKNOWN:DMM リモート解除でエラー: {ex.Message}\n");
                 }
             }
 
@@ -385,18 +442,10 @@ namespace MEASUREcommunication
         private async Task MEASURE_Reset(string usbid, CancellationToken ct)
         {
             string command = "*RST";
-            try
-            {
-                await commSend.Comm_sendB(usbid, command);      //リモート解除を無効にして送信
-                bool comp = await Complete_Check(usbid, ct);        //直前コマンド完了チェック
-                if (!comp)
-                    throw new Exception("# WARN: DMM リセット失敗\n");
-            }
-            catch (Exception ex)        //例外処理
-            {
-                //MessageBox.Show($"# Measureリセットでエラーが発生しました: {ex.Message}");
-                throw new Exception($"# WARN: DMM リセットエラー {ex.Message}\n", ex);
-            }
+            await commSend.Comm_sendB(usbid, command);      //リモート解除を無効にして送信
+            bool comp = await Complete_Check(usbid, ct);        //直前コマンド完了チェック
+            if (!comp)
+                throw new MeasWarningException("# WARN:DMM リセット失敗\n");
         }
 
         //*************************************************
