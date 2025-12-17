@@ -774,22 +774,35 @@
 					<StackPanel>
 						<CheckBox 
 							Content="結果ファイル出力時測定器フッターを削除"
-							IsChecked="{Binding DebugFinalFileFotterRemove, Mode=TwoWay}"/>
+							IsChecked="{Binding DebugSettings.DebugFinalFileFotterRemove, Mode=TwoWay}"/>
 						<CheckBox 
 							Content="OSC未使用ChOFF(8chOSC使用時)"
-							IsChecked="{Binding DebugUse8chOSC, Mode=TwoWay}"/>
+							IsChecked="{Binding DebugSettings.DebugUse8chOSC, Mode=TwoWay}"/>
 						<CheckBox 
-							Content="【未対応】エラーメッセージ無視"/>
+							Content="エラー発生時停止"
+							IsChecked="{Binding DebugSettings.DebugStopOnWarning, Mode=TwoWay}"/>
 						<CheckBox 
 							Content="サーモストリーマ安定時間変更(sec)"
-							IsChecked="{Binding DebugEditThermoSoak, Mode=TwoWay}"/>
+							IsChecked="{Binding DebugSettings.DebugEditThermoSoak, Mode=TwoWay}"/>
 						<TextBox 
 							x:Name="ThermoSoakTime" 
-							Text="{Binding DebugThermoSoakTime, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-							IsEnabled="{Binding DebugEditThermoSoak}"
+							Text="{Binding DebugSettings.DebugThermoSoakTime, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+							IsEnabled="{Binding DebugSettings.DebugEditThermoSoak}"
+							Width="50"
+							HorizontalAlignment="Left"
+							Margin="30,0,0,0"
 							TextWrapping="Wrap"/>
-						<Label 
-							Content="【未対応】デバッグ窓表示上限"/>
+						<CheckBox 
+							Content="デバッグ窓表示上限"
+							IsChecked="{Binding DebugSettings.DebugEditMaxLogLines, Mode=TwoWay}"/>
+						<TextBox 
+							x:Name="MaxLogLines" 
+							Text="{Binding DebugSettings.DebugMaxLogLines, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+							IsEnabled="{Binding DebugSettings.DebugEditMaxLogLines}"
+							Width="50"
+							HorizontalAlignment="Left"
+							Margin="30,0,0,0"
+							TextWrapping="Wrap"/>
 						<TextBox 
 							x:Name="Debug_textbox2" 
 							Text="Debug Text(テスト表示)"

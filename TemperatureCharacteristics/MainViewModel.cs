@@ -18,6 +18,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
 using TemperatureCharacteristics.Act;
+using TemperatureCharacteristics.Layout;
 using TemperatureCharacteristics.Models;
 using TemperatureCharacteristics.Services;
 using ThermoAction;
@@ -67,6 +68,10 @@ namespace TemperatureCharacteristics
         public SweepTabWindow SweepTab => _sweepTab;
         public DelayTabWindow DelayTab => _delayTab;
         public VITabWindow VITab => _viTab;
+        //*************************************************
+        //DebugWindow
+        //*************************************************
+        public DebugSettingsViewModel DebugSettings { get; } = new DebugSettingsViewModel();
         //*************************************************
         //プリセットボタン用Popup
         //*************************************************
@@ -348,8 +353,6 @@ namespace TemperatureCharacteristics
             FT2232HList = new ObservableCollection<string>();
             DebugTextBox = string.Empty;
             DebugLog = string.Empty;
-            DebugFinalFileFotterRemove = false;
-            DebugThermoSoakTime = "600";
 
             AllCheckedTabNamesText = "対象なし";
             //**********************************
@@ -383,12 +386,6 @@ namespace TemperatureCharacteristics
             //**********************************
             RegisterInstrumentHandlers();
             SubscribeInstrumentCheckChanges();
-            //**********************************
-            //1秒ごとにメモリ使用量を更新
-            //**********************************
-            //_memoryTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-            //_memoryTimer.Tick += (s, e) => UpdateMemoryUsage();
-            //_memoryTimer.Start();
 
             StartMeasurementCommand = new RelayCommandAsync(execute: async (param) => await StartMeasurementAsync(), () => true);    //ボタンは常に有効
             GetUSBIDCommand = new RelayCommandAsync(execute: async (param) => await GetUSBIDAsync(), canExecute: () => !IsRunning);
@@ -953,7 +950,8 @@ namespace TemperatureCharacteristics
             //*********************
             //定義
             //*********************
-            bool isCheck = true;
+            bool isCheck;
+            bool allCheck = true;
             string message = string.Empty;                  //メッセージ表示用変数初期化
             string response = string.Empty;
             //*********************
@@ -1014,12 +1012,13 @@ namespace TemperatureCharacteristics
                     if (!isCheck)
                         message += $"{device.identifier}との接続確認失敗";
                 }
-                isCheck &= isCheck;
+                allCheck &= isCheck;
                 //debug*********************************
                 this.LogDebug($"{device.identifier}→{response}");   //応答
                 //*********************************debug
             }
-            message = isCheck ? "接続確認問題なし" : "接続確認でエラー発生";
+            if (allCheck)
+                message = "接続確認問題なし";
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 Window? owner = Application.Current.MainWindow;
@@ -1089,6 +1088,14 @@ namespace TemperatureCharacteristics
                 _cts = new CancellationTokenSource();           //キャンセルトークン定義
 
                 List<(bool IsChecked, string UsbId, string InstName, string Identifier)> measInstData = null;
+               var debugOption = new DebugOption
+                {
+                    FinalFileFotterRemove = DebugSettings.DebugFinalFileFotterRemove,
+                    Use8chOSC = DebugSettings.DebugUse8chOSC,
+                    StopOnWarning = DebugSettings.DebugStopOnWarning,
+                    EditThermoSoak = DebugSettings.DebugEditThermoSoak,
+                    ThermoSoakTime = DebugSettings.DebugThermoSoakTime
+               };
                 //*********************
                 //コールバック関数（キャンセル用
                 //*********************
@@ -1099,7 +1106,7 @@ namespace TemperatureCharacteristics
                     //UIスレッドがブロックされるため（バックグラウンドからアクセスできない）
                     //測定器アドレスをコピー
                     //*********************
-                    measInstData = 
+                    measInstData =
                         _measInst.Where(inst => inst.checkBox != null)                              //CheckBoxがnull(存在しない)以外の時
                         .Select(inst =>
                         {
@@ -1211,10 +1218,10 @@ namespace TemperatureCharacteristics
                         //*********************
                         //サーモ初期化
                         //*********************
-                        (thermoSuccess, logRows) = await _thermoAct.ThermoInitial(measInstData, _cts.Token, DebugThermoSoakTime);
-//#if DEBUG
-//                        thermoSuccess = true;
-//#endif
+                        (thermoSuccess, logRows) = await _thermoAct.ThermoInitial(measInstData, _cts.Token, debugOption.ThermoSoakTime);
+                        //#if DEBUG
+                        //                        thermoSuccess = true;
+                        //#endif
                         if (!thermoSuccess)
                             return;
                         //*********************
@@ -1225,9 +1232,9 @@ namespace TemperatureCharacteristics
                             _cts.Token.ThrowIfCancellationRequested();  //キャンセルチェック
                             MeasurementStatus = $"サーモ 温度{targetTemp}℃ 設定+安定待ち...";
                             (thermoSuccess, logRows) = await _thermoAct.ThermoAction(measInstData, targetTemp, _cts.Token, NoConfirmCallback);
-//#if DEBUG
-//                            thermoSuccess = true;
-//#endif
+                            //#if DEBUG
+                            //                            thermoSuccess = true;
+                            //#endif
                             if (!thermoSuccess)
                             {
                                 this.LogDebug($"サーモ 温度{targetTemp}℃ 設定失敗");
@@ -1239,7 +1246,7 @@ namespace TemperatureCharacteristics
                             //リレー動作＋測定
                             //*********************
                             rows.Add($"サーモ 温度{targetTemp}℃");
-                            await ExcuteMesurementRellayLoop(measInstData, rows, sampleCount, DebugUse8chOSC, _cts.Token , NoConfirmCallback);
+                            await ExcuteMesurementRellayLoop(measInstData, rows, sampleCount, debugOption, _cts.Token, NoConfirmCallback);
                         }
                     }
                     //*********************
@@ -1250,7 +1257,7 @@ namespace TemperatureCharacteristics
                         //*********************
                         //リレー動作＋測定
                         //*********************
-                        await ExcuteMesurementRellayLoop(measInstData, rows, sampleCount, DebugUse8chOSC, _cts.Token , NoConfirmCallback);
+                        await ExcuteMesurementRellayLoop(measInstData, rows, sampleCount, debugOption, _cts.Token, NoConfirmCallback);
                     }
                 }
                 catch (OperationCanceledException)
@@ -1263,32 +1270,12 @@ namespace TemperatureCharacteristics
                 }
                 catch (Exception ex)
                 {
-                    if (ex.Message.Contains("WARN"))
-                    {
-                        //警告レベル → ログに残すが処理は継続
-                        rows.Add($"# 警告: {ex.Message}");
-                        this.LogDebug($"警告: {ex.Message}");
-                    }
-                    else if (ex.Message.Contains("FATAL"))
-                    {
-                        //致命的レベル → 処理を停止
-                        rows.Add($"# 致命的エラー: {ex.Message}");
-                        this.LogDebug($"致命的: {ex.Message}");
-
-                        //測定を強制終了
-                        IsRunning = false;
-                        _cts?.Cancel();
-                        return; //メソッドを終了→finally実行
-                    }
-                    else
-                    {
-                        //その他の例外は従来通りエラー扱い
-                        rows.Add($"# 測定エラー: {ex.Message}");
-                        this.LogDebug($"例外: {ex.Message}");
-                    }
+                    //その他の例外は従来通りエラー扱い
+                    rows.Add($"# 測定エラー: {ex.Message}");
+                    this.LogDebug($"例外: {ex.Message}");
                 }
                 finally
-                { 
+                {
                     //*********************
                     //全条件測定完了
                     //コメント行（#で始まる）を抽出して結果メッセージに追加
@@ -1302,7 +1289,7 @@ namespace TemperatureCharacteristics
                     //最終データ追記用にフッター生成
                     //*********************
                     string footer = BuildSettingsFooter(measInstData);
-                    if (DebugFinalFileFotterRemove)
+                    if (debugOption.FinalFileFotterRemove)
                         footer = string.Empty;
                     //*********************
                     //コメント行（#で始まる）を除外して最終データにする
@@ -1615,7 +1602,7 @@ namespace TemperatureCharacteristics
                                                 List<(bool, string, string, string)> measInstData, 
                                                 List<string> rows,
                                                 int? sampleCount,
-                                                bool option,
+                                                DebugOption option,
                                                 CancellationToken cancellationToken = default,
                                                 Func<Task<bool>> confirmCallback = null)
         {
@@ -1674,7 +1661,7 @@ namespace TemperatureCharacteristics
         private async Task MeasurementTabs(
                                             List<(bool, string, string, string)> measInstData, 
                                             List<string> rows,
-                                            bool option,
+                                            DebugOption option,
                                             CancellationToken cancellationToken = default,
                                             Func<Task<bool>> confirmCallback = null)
         {
@@ -1714,7 +1701,7 @@ namespace TemperatureCharacteristics
                 VITab.IsBigTabCtrlEnabled = true;
                 VITab.IsSmallTabCtrlEnabled = false;
                 MeasurementStatus += "VI測定中...";
-                var viRows = await _viAct.VIAction(measInstData, cancellationToken, confirmCallback, _cachedVIDevices);
+                var viRows = await _viAct.VIAction(measInstData, option, cancellationToken, confirmCallback, _cachedVIDevices);
                 rows.AddRange(viRows);
             }
         }
@@ -1800,18 +1787,6 @@ namespace TemperatureCharacteristics
         }
         //**************************************************************************************************************************
         //debug用↓
-        private bool _debugEditThermoSoak;
-        public bool DebugEditThermoSoak { get => _debugEditThermoSoak; set { if (_debugEditThermoSoak != value) { _debugEditThermoSoak = value; OnPropertyChanged(); } } }
-        private string _debugThermoSoakTime = "600";
-        public string DebugThermoSoakTime { get => _debugThermoSoakTime; set { _debugThermoSoakTime = value; OnPropertyChanged(); } }
-        private bool _debugFinalFileFotterRemove;
-        public bool DebugFinalFileFotterRemove { get => _debugFinalFileFotterRemove; set { if (_debugFinalFileFotterRemove != value) { _debugFinalFileFotterRemove = value; OnPropertyChanged(); } } }
-        private bool _debugUse8chOSC;
-        public bool DebugUse8chOSC { get => _debugUse8chOSC; set { if (_debugUse8chOSC != value) { _debugUse8chOSC = value; OnPropertyChanged(); } } }
-        private const int MaxLogLines = 100;
-        //private string _memoryUsage;
-        //private DispatcherTimer _memoryTimer;
-        //public string MemoryUsage { get => _memoryUsage; set { _memoryUsage = value; OnPropertyChanged(); } }
         private async Task DebugSend()
         {
             //*********************
@@ -1838,29 +1813,27 @@ namespace TemperatureCharacteristics
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
+                //デバッグ窓表示上限取得
+                var debugOption = new DebugOption
+                {
+                    MaxLogLines = DebugSettings.DebugMaxLogLines
+                };
                 //新しいログを追加
-                DebugTextBox += $"{DateTime.Now:HH:mm:ss} {message}{Environment.NewLine}";
+                DebugTextBox += $"{DateTime.Now:HH:mm:ss}\n {message}{Environment.NewLine}";
 
                 //行数が上限を超えたら古い行を削除
                 var lines = DebugTextBox.Split(
                     new[] { Environment.NewLine },
                     StringSplitOptions.RemoveEmptyEntries);
 
-                if (lines.Length > MaxLogLines)
+                if (lines.Length > debugOption.MaxLogLines)
                 {
                     //最新 MaxLogLines 行だけ残す
                     DebugTextBox = string.Join(Environment.NewLine,
-                        lines.Skip(lines.Length - MaxLogLines));
+                        lines.Skip(lines.Length - debugOption.MaxLogLines));
                 }
             });
         }
-        //private void UpdateMemoryUsage()
-        //{
-        //    //long memoryBytes = GC.GetTotalMemory(false);
-        //    long memoryBytes = Process.GetCurrentProcess().WorkingSet64;
-        //    double memoryMB = memoryBytes / 1024.0 / 1024.0;
-        //    MemoryUsage = $"メモリ使用量: {memoryMB:F1} MB";
-        //}
         //debug用↑
         //**************************************************************************************************************************
     }
@@ -1883,42 +1856,6 @@ namespace TemperatureCharacteristics
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
-    //*********************
-    //再帰的にプロパティをコピー
-    //*********************
-    //public static class ViewModelMapper
-    //{
-    //    public static void CopyProperties(object source, object target)
-    //    {
-    //        var sourceProps = source.GetType().GetProperties();
-    //        foreach (var prop in sourceProps)
-    //        {
-    //            var value = prop.GetValue(source);
-    //            if (value != null)
-    //            {
-    //                // サブクラスなら再帰的にコピー
-    //                if (prop.PropertyType.Namespace == "TemperatureCharacteristics.Models")
-    //                {
-    //                    var targetSubProp = target.GetType().GetProperty(prop.Name);
-    //                    if (targetSubProp != null)
-    //                    {
-    //                        var targetSubInstance = targetSubProp.GetValue(target);
-    //                        if (targetSubInstance != null)
-    //                            CopyProperties(value, targetSubInstance);
-    //                    }
-    //                }
-    //                else
-    //                {
-    //                    var targetProp = target.GetType().GetProperty(prop.Name);
-    //                    if (targetProp != null && targetProp.CanWrite)
-    //                    {
-    //                        targetProp.SetValue(target, value);
-    //                    }
-    //                }
-    //            }
-    //        }
-    //    }
-    //}
 
     //*********************
     //コマンドの有効/無効制御

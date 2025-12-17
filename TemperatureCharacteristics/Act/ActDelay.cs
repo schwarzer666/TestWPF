@@ -7,7 +7,9 @@ using SOURCEcommunication;          //CommSOURCE.cs
 using System.Globalization;         //NumberStyles.Float, CultureInfo.InvariantCultureを使用するのに必要
 using TemperatureCharacteristics.Act;
 using UTility;                      //Utility.cs
-using TemperatureCharacteristics.Exceptions;    //例外スロー
+using TemperatureCharacteristics.Exceptions;
+using TemperatureCharacteristics.Models;
+using System.Linq.Expressions;
 
 namespace DelayAction
 {
@@ -331,7 +333,7 @@ namespace DelayAction
         //*************************************************
         public async Task<List<string>> DELAYAction(
                                             List<(bool IsChecked, string UsbId, string InstName, string Identifier)> meas_inst,
-                                            bool _use8chOSC,
+                                            DebugOption debugOption,
                                             CancellationToken cancellationToken = default,
                                             Func<Task<bool>>? confirmCallback = null,
                                             List<Device>? preCombinedDevices = null)
@@ -497,101 +499,131 @@ namespace DelayAction
                     string? oscTrange = oscTime[0];
                     string oscTpos = oscTime[1];
                     float measureWaitTime = (float.Parse(oscTrange) * ((100.0f - float.Parse(oscTpos)) / 100)) * 10.0f; //(oscTrange(1division) * oscTpos(%))*10division
-                    //*********************
-                    //各測定器Initialize
-                    //*********************
-                    await commSOURCE.SOURCE_Initialize(sourceDevices, tabname, cancellationToken);
-                    await commOSC.OSC_Initialize(oscDevices, tabname, cancellationToken);
-                    if(_use8chOSC)
-                        await commOSC.OSCUnusedChOFF(oscDevices, tabname, cancellationToken);
-                    await commOSC.OSCmeasureSet(oscDevices, tabname, cancellationToken);
-                    await commPG.PG_Initialize(pulseDevices, tabname, cancellationToken);
-                    //*********************
-                    //SourceON,PulseGeneratorON
-                    //電源出力安定待ち時間(暫定20ms)
-                    //*********************
-                    await commSOURCE.SOURCE_OutputON(sourceDevices, tabname, cancellationToken);
-                    await commPG.PG_OutputON(pulseDevices, tabname, cancellationToken);
-                    await utility.Wait_Timer((int)(20), cancellationToken);
-                    //*********************
-                    //初期状態設定
-                    //*********************
-                    if (isSpecial)
+                    try
                     {
-                        //検出復帰で別電源を変化
-                        foreach (Device detrelDevice in detrelDevices)
+                        //*********************
+                        //各測定器Initialize
+                        //*********************
+                        await commSOURCE.SOURCE_Initialize(sourceDevices, tabname, cancellationToken);
+                        await commOSC.OSC_Initialize(oscDevices, tabname, cancellationToken);
+                        if (debugOption.Use8chOSC)
+                            await commOSC.OSCUnusedChOFF(oscDevices, tabname, cancellationToken);
+                        await commOSC.OSCmeasureSet(oscDevices, tabname, cancellationToken);
+                        await commPG.PG_Initialize(pulseDevices, tabname, cancellationToken);
+                        //*********************
+                        //SourceON,PulseGeneratorON
+                        //電源出力安定待ち時間(暫定20ms)
+                        //*********************
+                        await commSOURCE.SOURCE_OutputON(sourceDevices, tabname, cancellationToken);
+                        await commPG.PG_OutputON(pulseDevices, tabname, cancellationToken);
+                        await utility.Wait_Timer((int)(20), cancellationToken);
+                        //*********************
+                        //初期状態設定
+                        //*********************
+                        if (isSpecial)
                         {
-                            SourceSettings? detrelset = detrelDevice.TabSettings[tabname] as SourceSettings;
-                            if (detrelDevice.Identifier == detrelSettings.SourceA)
-                                detrelset.SourceValue = Math.Round(detrelValueA, 8);
-                            if (detrelDevice.Identifier == detrelSettings.SourceB)
-                                detrelset.SourceValue = Math.Round(detrelValueB, 8);
+                            //検出復帰で別電源を変化
+                            foreach (Device detrelDevice in detrelDevices)
+                            {
+                                SourceSettings? detrelset = detrelDevice.TabSettings[tabname] as SourceSettings;
+                                if (detrelDevice.Identifier == detrelSettings.SourceA)
+                                    detrelset.SourceValue = Math.Round(detrelValueA, 8);
+                                if (detrelDevice.Identifier == detrelSettings.SourceB)
+                                    detrelset.SourceValue = Math.Round(detrelValueB, 8);
+                            }
+                            await commSOURCE.SOURCE_SetValue(detrelDevices, tabname, cancellationToken);
                         }
-                        await commSOURCE.SOURCE_SetValue(detrelDevices, tabname, cancellationToken);
+                        //*********************
+                        //検出復帰wait
+                        //*********************
+                        await utility.Wait_Timer((int)(checkTime * 1000), cancellationToken);
+                        if (isSpecial)
+                        {
+                            //検出復帰で別電源を変化させたものを元に戻す
+                            foreach (Device detrelDevice in detrelDevices)
+                            {
+                                SourceSettings? detrelset = detrelDevice.TabSettings[tabname] as SourceSettings;
+                                if (detrelDevice.Identifier == detrelSettings.SourceA)
+                                    detrelset.SourceValue = constValueA;
+                                if (detrelDevice.Identifier == detrelSettings.SourceB)
+                                    detrelset.SourceValue = constValueB;
+                            }
+                            await commSOURCE.SOURCE_SetValue(detrelDevices, tabname, cancellationToken);
+                        }
+                        //*********************
+                        //OscSingleRun
+                        //*********************
+                        await commOSC.OSCsingleRUN(oscDevices, tabname, cancellationToken);
+                        //*********************
+                        //PulseGenerator CH表示切替(Initialと同時にするとタイミングの関係上切り替わらない
+                        //*********************
+                        await commPG.PG_DispCH(pulseDevices, tabname, cancellationToken);
+                        //*********************
+                        //PulseGenerator Trig発生
+                        //*********************
+                        await commPG.PG_BusTrigger(pulseDevices, tabname, cancellationToken);   //問題あればCHトリガ
+                                                                                                //*********************
+                                                                                                //検出復帰遅延時間wait
+                                                                                                //*********************
+                        await utility.Wait_Timer((int)(measureWaitTime * 1000), cancellationToken);
+                        //*********************
+                        //OSC Delay測定
+                        //*********************
+                        string delayResult = await commOSC.OSCmeasureDelay(oscDevices, tabname, cancellationToken);
+                        //*********************
+                        //CSV書き込みデータ更新
+                        //*********************
+                        delayRows.Add(string.Join(",", tabname, delayResult));  //区切り文字カンマを使用して各要素を追加
+                                                                                //*********************
+                                                                                //1条件(Tabname)終了時動作
+                                                                                //SourceOFF,PulseGeneratorOFF
+                                                                                //*********************
+                        await commSOURCE.SOURCE_OutputOFF(sourceDevices, tabname, cancellationToken);
+                        await commPG.PG_OutputOFF(pulseDevices, tabname, cancellationToken);
+                        //*********************
+                        //全測定器Remote解除
+                        //*********************
+                        await commSOURCE.SOURCE_RemoteOFF(sourceDevices);
+                        await commOSC.OSC_RemoteOFF(oscDevices);
+                        await commPG.PG_RemoteOFF(pulseDevices);
+                        //*********************
+                        //データ格納
+                        //*********************
+                        tabCsvRows.AddRange(delayRows);
+                        resultDataRowsByTab[tabname].AddRange(delayRows);
+                        //*********************
+                        //タブごとの中間データ最終保存
+                        //*********************
+                        if (tabCsvRows.Any() && tabCsvRows.Count > 1)
+                            await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
                     }
-                    //*********************
-                    //検出復帰wait
-                    //*********************
-                    await utility.Wait_Timer((int)(checkTime * 1000), cancellationToken);
-                    if (isSpecial)
+                    catch (MeasFatalException ex)
                     {
-                        //検出復帰で別電源を変化させたものを元に戻す
-                        foreach (Device detrelDevice in detrelDevices)
+                        delayData.Add($"# Delay動作中に致命レベルエラーが発生しました: {ex.Message}");
+                        csvRows.Add($"# {string.Join(" ", delayData).Replace(Environment.NewLine, " ")}");
+                        //処理中のタブデータがあれば保存
+                        if (tabCsvRows.Any() && tabCsvRows.Count > 1)
                         {
-                            SourceSettings? detrelset = detrelDevice.TabSettings[tabname] as SourceSettings;
-                            if (detrelDevice.Identifier == detrelSettings.SourceA)
-                                detrelset.SourceValue = constValueA;
-                            if (detrelDevice.Identifier == detrelSettings.SourceB)
-                                detrelset.SourceValue = constValueB;
+                            tabNameFilePath = baseTempFilePath.Replace("_DelayData_", $"_ErrorDelayData_{currentTabName}_");
+                            await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
                         }
-                        await commSOURCE.SOURCE_SetValue(detrelDevices, tabname, cancellationToken);
+                        return csvRows;
                     }
-                    //*********************
-                    //OscSingleRun
-                    //*********************
-                    await commOSC.OSCsingleRUN(oscDevices, tabname, cancellationToken);
-                    //*********************
-                    //PulseGenerator CH表示切替(Initialと同時にするとタイミングの関係上切り替わらない
-                    //*********************
-                    await commPG.PG_DispCH(pulseDevices, tabname, cancellationToken);
-                    //*********************
-                    //PulseGenerator Trig発生
-                    //*********************
-                    await commPG.PG_BusTrigger(pulseDevices, tabname, cancellationToken);   //問題あればCHトリガ
-                    //*********************
-                    //検出復帰遅延時間wait
-                    //*********************
-                    await utility.Wait_Timer((int)(measureWaitTime * 1000), cancellationToken);
-                    //*********************
-                    //OSC Delay測定
-                    //*********************
-                    string delayResult = await commOSC.OSCmeasureDelay(oscDevices, tabname, cancellationToken);
-                    //*********************
-                    //CSV書き込みデータ更新
-                    //*********************
-                    delayRows.Add(string.Join(",", tabname, delayResult));  //区切り文字カンマを使用して各要素を追加
-                    //*********************
-                    //1条件(Tabname)終了時動作
-                    //SourceOFF,PulseGeneratorOFF
-                    //*********************
-                    await commSOURCE.SOURCE_OutputOFF(sourceDevices, tabname, cancellationToken);
-                    await commPG.PG_OutputOFF(pulseDevices, tabname, cancellationToken);
-                    //*********************
-                    //全測定器Remote解除
-                    //*********************
-                    await commSOURCE.SOURCE_RemoteOFF(sourceDevices);
-                    await commOSC.OSC_RemoteOFF(oscDevices);
-                    await commPG.PG_RemoteOFF(pulseDevices);
-                    //*********************
-                    //データ格納
-                    //*********************
-                    tabCsvRows.AddRange(delayRows);
-                    resultDataRowsByTab[tabname].AddRange(delayRows);
-                    //*********************
-                    //タブごとの中間データ最終保存
-                    //*********************
-                    if (tabCsvRows.Any() && tabCsvRows.Count > 1)
-                        await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
+                    catch (Exception ex)
+                    {
+                        delayData.Add($"# Delay動作中にエラーが発生しました: {ex.Message}");
+                        csvRows.Add($"# {string.Join(" ", delayData).Replace(Environment.NewLine, " ")}");
+                        //処理中のタブデータがあれば保存
+                        if (tabCsvRows.Any() && tabCsvRows.Count > 1)
+                        {
+                            tabNameFilePath = baseTempFilePath.Replace("_DelayData_", $"_ErrorDelayData_{currentTabName}_");
+                            await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
+                        }
+                        //Warningで停止する場合
+                        if (debugOption.StopOnWarning)
+                            return csvRows;
+                        continue;
+                    }
                 }
                 //*********************
                 //戻り値用データ生成
@@ -622,42 +654,6 @@ namespace DelayAction
                     await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
                 }
                 throw;          //キャンセル要求を検知したら呼び出し元に通知
-            }
-            catch (MeasWarningException ex)
-            {
-                delayData.Add($"# Delay動作中に警告レベルエラーが発生しました: {ex.Message}");
-                csvRows.Add($"# {string.Join(" ", delayData).Replace(Environment.NewLine, " ")}");
-                //処理中のタブデータがあれば保存
-                if (tabCsvRows.Any() && tabCsvRows.Count > 1)
-                {
-                    string tabNameFilePath = baseTempFilePath.Replace("_DelayData_", $"_ErrorDelayData_{currentTabName}_");
-                    await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
-                }
-                return csvRows;
-            }
-            catch (MeasFatalException ex)
-            {
-                delayData.Add($"# Delay動作中に致命レベルエラーが発生しました: {ex.Message}");
-                csvRows.Add($"# {string.Join(" ", delayData).Replace(Environment.NewLine, " ")}");
-                //処理中のタブデータがあれば保存
-                if (tabCsvRows.Any() && tabCsvRows.Count > 1)
-                {
-                    string tabNameFilePath = baseTempFilePath.Replace("_DelayData_", $"_ErrorDelayData_{currentTabName}_");
-                    await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
-                }
-                return csvRows;
-            }
-            catch (Exception ex)
-            {
-                delayData.Add($"# Delay動作中にエラーが発生しました: {ex.Message}");
-                csvRows.Add($"# {string.Join(" ", delayData).Replace(Environment.NewLine, " ")}");
-                //処理中のタブデータがあれば保存
-                if (tabCsvRows.Any() && tabCsvRows.Count > 1)
-                {
-                    string tabNameFilePath = baseTempFilePath.Replace("_DelayData_", $"_ErrorDelayData_{currentTabName}_");
-                    await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
-                }
-                return csvRows;
             }
             finally
             {

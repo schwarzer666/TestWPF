@@ -9,6 +9,7 @@ using System.Text;
 using UTility;                      //Utility.cs
 using TemperatureCharacteristics.Act;
 using TemperatureCharacteristics.Exceptions;
+using TemperatureCharacteristics.Models;
 using System.Reflection.Metadata.Ecma335;
 
 namespace SweepAction
@@ -456,7 +457,7 @@ namespace SweepAction
         //*************************************************
         public async Task<List<string>> SWEEPAction(
                                             List<(bool IsChecked, string UsbId, string InstName, string Identifier)> meas_inst,
-                                            bool _use8chOSC,
+                                            DebugOption debugOption,
                                             CancellationToken cancellationToken = default,
                                             Func<Task<bool>>? confirmCallback = null,
                                             List<Device>? preCombinedDevices = null)
@@ -713,7 +714,7 @@ namespace SweepAction
                     if (enOsc)
                     {
                         await commOSC.OSC_Initialize(oscDevices, tabname, cancellationToken);
-                        if (_use8chOSC)
+                        if (debugOption.Use8chOSC)
                             await commOSC.OSCUnusedChOFF(oscDevices, tabname, cancellationToken);
                     }
                     if (enDmm)
@@ -1149,10 +1150,31 @@ namespace SweepAction
                                         await commSOURCE.SOURCE_SetValue(detrelDevices, tabname, cancellationToken);
                                     }
                                 }
+                                catch (MeasFatalException ex)
+                                {
+                                    sweepData.Add($"# Sweep動作中に致命レベルエラーが発生しました: {ex.Message}");
+                                    csvRows.Add($"# {string.Join(" ", sweepData).Replace(Environment.NewLine, " ")}");
+                                    //処理中のタブデータがあれば保存
+                                    if (tabCsvRows.Any() && tabCsvRows.Count > 1)
+                                    {
+                                        tabNameFilePath = baseTempFilePath.Replace("_SweepData_", $"_ErrorSweepData_{currentTabName}_");
+                                        await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
+                                    }
+                                    return csvRows;
+                                }
                                 catch (Exception ex)
                                 {
+                                    //WarningやExceptionエラー発生なら継続
                                     csvRows.Add($"# {tabname}: 検出もしくは復帰エラー({currentValue}V): {ex.Message}");
-                                    break;
+                                    if (tabCsvRows.Any() && tabCsvRows.Count > 1)
+                                    {
+                                        tabNameFilePath = baseTempFilePath.Replace("_SweepData_", $"_ErrorSweepData_{currentTabName}_");
+                                        await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
+                                    }
+                                    //Warningで停止する場合
+                                    if (debugOption.StopOnWarning)
+                                        return csvRows;
+                                    continue;
                                 }
 
                                 //*********************
@@ -1252,42 +1274,6 @@ namespace SweepAction
                 }
                 throw;          //キャンセル要求を検知したら呼び出し元に通知
             }
-            catch (MeasWarningException ex)
-            {
-                sweepData.Add($"# Sweep動作中に警告レベルエラーが発生しました: {ex.Message}");
-                csvRows.Add($"# {string.Join(" ", sweepData).Replace(Environment.NewLine, " ")}");
-                //処理中のタブデータがあれば保存
-                if (tabCsvRows.Any() && tabCsvRows.Count > 1)
-                {
-                    string tabNameFilePath = baseTempFilePath.Replace("_SweepData_", $"_ErrorSweepData_{currentTabName}_");
-                    await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
-                }
-                return csvRows;
-            }
-            catch (MeasFatalException ex)
-            {
-                sweepData.Add($"# Sweep動作中に致命レベルエラーが発生しました: {ex.Message}");
-                csvRows.Add($"# {string.Join(" ", sweepData).Replace(Environment.NewLine, " ")}");
-                //処理中のタブデータがあれば保存
-                if (tabCsvRows.Any() && tabCsvRows.Count > 1)
-                {
-                    string tabNameFilePath = baseTempFilePath.Replace("_SweepData_", $"_ErrorSweepData_{currentTabName}_");
-                    await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
-                }
-                return csvRows;
-            }
-            catch (Exception ex)
-            {
-                sweepData.Add($"# Sweep動作中にエラーが発生しました: {ex.Message}");
-                csvRows.Add($"# {string.Join(" ", sweepData).Replace(Environment.NewLine, " ")}");
-                //処理中のタブデータがあれば保存
-                if (tabCsvRows.Any() && tabCsvRows.Count > 1)
-                {
-                    string tabNameFilePath = baseTempFilePath.Replace("_SweepData_", $"_ErrorSweepData_{currentTabName}_");
-                    await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
-                }
-                return csvRows;
-            }
             finally
             {
                 //*********************
@@ -1368,8 +1354,13 @@ namespace SweepAction
 
                 await utility.Wait_Timer((int)(20), cancellationToken);
             }
+            catch (MeasFatalException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
+                //WarningExceptionとExceptionの場合
                 csvRows.Add($"# {tabname}: 電源設定エラー({currentValue}V): {ex.Message}");
                 return false;
             }

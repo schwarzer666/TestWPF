@@ -6,6 +6,7 @@ using System.Text;
 using System.Windows.Forms;
 using TemperatureCharacteristics.Act;
 using TemperatureCharacteristics.Exceptions;    //例外スロー
+using TemperatureCharacteristics.Models;
 using UTility;                      //Utility.cs
 using VITab;                        //LayoutVITab.cs
 
@@ -338,7 +339,8 @@ namespace VIAction
         //コメント
         //*************************************************
         public async Task<List<string>> VIAction(
-                                            List<(bool IsChecked, string UsbId, string InstName, string Identifier)> meas_inst, 
+                                            List<(bool IsChecked, string UsbId, string InstName, string Identifier)> meas_inst,
+                                            DebugOption debugOption,
                                             CancellationToken cancellationToken = default,
                                             Func<Task<bool>>? confirmCallback = null,
                                             List<Device>? preCombinedDevices = null)
@@ -532,95 +534,125 @@ namespace VIAction
                         if (deviceList.Any(d => d.Identifier == $"DMM{j}"))
                             row.Add("");
                     viRows.Add(string.Join(",", row));     //仮の行を追加
-                    //*********************
-                    //各測定器Initialize
-                    //*********************
-                    await commSOURCE.SOURCE_Initialize(sourceDevices, tabname, cancellationToken);
-                    await commMEASURE.MEASURE_Initialize(dmmDevices, tabname, cancellationToken);   //初期化処理でDMM測定待機状態まで遷移
-                    //*********************
-                    //SourceON
-                    //電源出力安定待ち時間(暫定20ms)
-                    //*********************
-                    await commSOURCE.SOURCE_OutputON(sourceDevices, tabname, cancellationToken);
-                    await utility.Wait_Timer((int)(20), cancellationToken);
-                    //*********************
-                    //初期状態設定
-                    //*********************
-                    if (isSpecial)
+                    try
                     {
-                        //検出復帰で別電源を変化
-                        foreach (Device detrelDevice in detrelDevices)
+                        //*********************
+                        //各測定器Initialize
+                        //*********************
+                        await commSOURCE.SOURCE_Initialize(sourceDevices, tabname, cancellationToken);
+                        await commMEASURE.MEASURE_Initialize(dmmDevices, tabname, cancellationToken);   //初期化処理でDMM測定待機状態まで遷移
+                        //*********************
+                        //SourceON
+                        //電源出力安定待ち時間(暫定20ms)
+                        //*********************
+                        await commSOURCE.SOURCE_OutputON(sourceDevices, tabname, cancellationToken);
+                        await utility.Wait_Timer((int)(20), cancellationToken);
+                        //*********************
+                        //初期状態設定
+                        //*********************
+                        if (isSpecial)
                         {
-                            SourceSettings? detrelset = detrelDevice.TabSettings[tabname] as SourceSettings;
-                            if (detrelDevice.Identifier == detrelSettings.SourceA)
-                                detrelset.SourceValue = Math.Round(detrelValueA, 8);
-                            if (detrelDevice.Identifier == detrelSettings.SourceB)
-                                detrelset.SourceValue = Math.Round(detrelValueB, 8);
+                            //検出復帰で別電源を変化
+                            foreach (Device detrelDevice in detrelDevices)
+                            {
+                                SourceSettings? detrelset = detrelDevice.TabSettings[tabname] as SourceSettings;
+                                if (detrelDevice.Identifier == detrelSettings.SourceA)
+                                    detrelset.SourceValue = Math.Round(detrelValueA, 8);
+                                if (detrelDevice.Identifier == detrelSettings.SourceB)
+                                    detrelset.SourceValue = Math.Round(detrelValueB, 8);
+                            }
+                            await commSOURCE.SOURCE_SetValue(detrelDevices, tabname, cancellationToken);
                         }
-                        await commSOURCE.SOURCE_SetValue(detrelDevices, tabname, cancellationToken);
+                        //*********************
+                        //検出復帰wait
+                        //*********************
+                        await utility.Wait_Timer((int)(checkTime * 1000), cancellationToken);
+                        if (isSpecial)
+                        {
+                            //検出復帰で別電源を変化させたものを元に戻す
+                            foreach (Device detrelDevice in detrelDevices)
+                            {
+                                SourceSettings? detrelset = detrelDevice.TabSettings[tabname] as SourceSettings;
+                                if (detrelDevice.Identifier == detrelSettings.SourceA)
+                                    detrelset.SourceValue = constValueA;
+                                if (detrelDevice.Identifier == detrelSettings.SourceB)
+                                    detrelset.SourceValue = constValueB;
+                            }
+                            await commSOURCE.SOURCE_SetValue(detrelDevices, tabname, cancellationToken);
+                        }
+                        //*********************
+                        //測定Stanby
+                        //*********************
+                        await utility.Wait_Timer((int)(standbyTime * 1000), cancellationToken);
+                        //*********************
+                        //測定スタート
+                        //*********************
+                        cancellationToken.ThrowIfCancellationRequested();       //キャンセルチェック
+                        StringBuilder dmmData = new StringBuilder();
+                        //*********************
+                        //測定待機状態に遷移している為BUSトリガ発生→測定
+                        //*********************
+                        if (dmmTrigSource == "BUS")
+                            await commMEASURE.MEASURE_BusTrigger(dmmDevices, tabname, cancellationToken);
+                        //*********************
+                        //測定値取得
+                        //*********************
+                        if (dmmTrigSource == "BUS" || dmmTrigSource == "EXT")
+                            dmmData = await commMEASURE.MEASURE_ReadData(dmmDevices, tabname, cancellationToken);
+                        if (dmmTrigSource == "IMM")
+                            dmmData = await commMEASURE.MEASURE_Data(dmmDevices, tabname, cancellationToken);
+                        //*********************
+                        //CSV書き込みデータ更新
+                        //*********************
+                        await UpdateCsvWithDmmData(viRows, dmmData, deviceList);
+                        //*********************
+                        //1条件(Tabname)終了時動作
+                        //SourceOFF
+                        //*********************
+                        await commSOURCE.SOURCE_OutputOFF(sourceDevices, tabname, cancellationToken);
+                        //*********************
+                        //全測定器Remote解除
+                        //*********************
+                        await commSOURCE.SOURCE_RemoteOFF(sourceDevices);
+                        await commMEASURE.MEASURE_RemoteOFF(dmmDevices);
+                        //*********************
+                        //データ格納
+                        //*********************
+                        tabCsvRows.AddRange(viRows);
+                        resultDataRowsByTab[tabname].AddRange(viRows);
+                        //*********************
+                        //タブごとの中間データ最終保存
+                        //*********************
+                        if (tabCsvRows.Any() && tabCsvRows.Count > 1)
+                            await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
                     }
-                    //*********************
-                    //検出復帰wait
-                    //*********************
-                    await utility.Wait_Timer((int)(checkTime * 1000), cancellationToken);
-                    if (isSpecial)
+                    catch (MeasFatalException ex)
                     {
-                        //検出復帰で別電源を変化させたものを元に戻す
-                        foreach (Device detrelDevice in detrelDevices)
+                        viData.Add($"# VI動作中に致命レベルエラーが発生しました: {ex.Message}");
+                        csvRows.Add($"# {string.Join(" ", viData).Replace(Environment.NewLine, " ")}");
+                        //処理中のタブデータがあれば保存
+                        if (tabCsvRows.Any() && tabCsvRows.Count > 1)
                         {
-                            SourceSettings? detrelset = detrelDevice.TabSettings[tabname] as SourceSettings;
-                            if (detrelDevice.Identifier == detrelSettings.SourceA)
-                                detrelset.SourceValue = constValueA;
-                            if (detrelDevice.Identifier == detrelSettings.SourceB)
-                                detrelset.SourceValue = constValueB;
+                            tabNameFilePath = baseTempFilePath.Replace("_VIData_", $"_ErrorVIData_{currentTabName}_");
+                            await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
                         }
-                        await commSOURCE.SOURCE_SetValue(detrelDevices, tabname, cancellationToken);
+                        return csvRows;
                     }
-                    //*********************
-                    //測定Stanby
-                    //*********************
-                    await utility.Wait_Timer((int)(standbyTime * 1000), cancellationToken);
-                    //*********************
-                    //測定スタート
-                    //*********************
-                    cancellationToken.ThrowIfCancellationRequested();       //キャンセルチェック
-                    StringBuilder dmmData = new StringBuilder();
-                    //*********************
-                    //測定待機状態に遷移している為BUSトリガ発生→測定
-                    //*********************
-                    if (dmmTrigSource == "BUS")
-                        await commMEASURE.MEASURE_BusTrigger(dmmDevices, tabname, cancellationToken);
-                    //*********************
-                    //測定値取得
-                    //*********************
-                    if (dmmTrigSource == "BUS" || dmmTrigSource == "EXT")
-                        dmmData = await commMEASURE.MEASURE_ReadData(dmmDevices, tabname, cancellationToken);
-                    if (dmmTrigSource == "IMM")
-                        dmmData = await commMEASURE.MEASURE_Data(dmmDevices, tabname, cancellationToken);
-                    //*********************
-                    //CSV書き込みデータ更新
-                    //*********************
-                    await UpdateCsvWithDmmData(viRows, dmmData, deviceList);
-                    //*********************
-                    //1条件(Tabname)終了時動作
-                    //SourceOFF
-                    //*********************
-                    await commSOURCE.SOURCE_OutputOFF(sourceDevices, tabname, cancellationToken);
-                    //*********************
-                    //全測定器Remote解除
-                    //*********************
-                    await commSOURCE.SOURCE_RemoteOFF(sourceDevices);
-                    await commMEASURE.MEASURE_RemoteOFF(dmmDevices);
-                    //*********************
-                    //データ格納
-                    //*********************
-                    tabCsvRows.AddRange(viRows);
-                    resultDataRowsByTab[tabname].AddRange(viRows);
-                    //*********************
-                    //タブごとの中間データ最終保存
-                    //*********************
-                    if (tabCsvRows.Any() && tabCsvRows.Count > 1)
-                        await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
+                    catch (Exception ex)
+                    {
+                        viData.Add($"# VI動作中にエラーが発生しました: {ex.Message}");
+                        csvRows.Add($"# {string.Join(" ", viData).Replace(Environment.NewLine, " ")}");
+                        //処理中のタブデータがあれば保存
+                        if (tabCsvRows.Any() && tabCsvRows.Count > 1)
+                        {
+                            tabNameFilePath = baseTempFilePath.Replace("_VIData_", $"_ErrorVIData_{currentTabName}_");
+                            await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
+                        }
+                        //Warningで停止する場合
+                        if (debugOption.StopOnWarning)
+                            return csvRows;
+                        return csvRows;
+                    }
                 }
                 //*********************
                 //戻り値用データ生成
@@ -651,42 +683,6 @@ namespace VIAction
                     await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
                 }
                 throw;          //キャンセル要求を検知したら呼び出し元に通知
-            }
-            catch (MeasWarningException ex)
-            {
-                viData.Add($"# VI動作中に警告レベルエラーが発生しました: {ex.Message}");
-                csvRows.Add($"# {string.Join(" ", viData).Replace(Environment.NewLine, " ")}");
-                //処理中のタブデータがあれば保存
-                if (tabCsvRows.Any() && tabCsvRows.Count > 1)
-                {
-                    string tabNameFilePath = baseTempFilePath.Replace("_VIData_", $"_ErrorVIData_{currentTabName}_");
-                    await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
-                }
-                return csvRows;
-            }
-            catch (MeasFatalException ex)
-            {
-                viData.Add($"# VI動作中に致命レベルエラーが発生しました: {ex.Message}");
-                csvRows.Add($"# {string.Join(" ", viData).Replace(Environment.NewLine, " ")}");
-                //処理中のタブデータがあれば保存
-                if (tabCsvRows.Any() && tabCsvRows.Count > 1)
-                {
-                    string tabNameFilePath = baseTempFilePath.Replace("_VIData_", $"_ErrorVIData_{currentTabName}_");
-                    await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
-                }
-                return csvRows;
-            }
-            catch (Exception ex)
-            {
-                viData.Add($"# VI動作中にエラーが発生しました: {ex.Message}");
-                csvRows.Add($"# {string.Join(" ", viData).Replace(Environment.NewLine, " ")}");
-                //処理中のタブデータがあれば保存
-                if (tabCsvRows.Any() && tabCsvRows.Count > 1)
-                {
-                    string tabNameFilePath = baseTempFilePath.Replace("_VIData_", $"_ErrorVIData_{currentTabName}_");
-                    await utility.WriteCsvFileAsync(tabNameFilePath, tabCsvRows, append: false, useShiftJis: true);
-                }
-                return csvRows;
             }
             finally
             {
