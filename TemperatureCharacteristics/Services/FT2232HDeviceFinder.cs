@@ -25,6 +25,24 @@ namespace TemperatureCharacteristics.Services
             }
         }
         //*************************************************
+        //動作
+        // FT2232H用通信確認
+        // シリアルナンバーでポートオープン+BitBangモード
+        //*************************************************
+        public async Task<(string response, bool success)> CheckFT2232HConnection(string serialNumber)
+        {
+            if (string.IsNullOrWhiteSpace(serialNumber))
+                return ("シリアルナンバー未入力", false);
+
+            using var bitBang = new FT2232HBitBangService();
+            bool success = await bitBang.OpenBySerialNumberAsync(serialNumber);
+            if (!success)
+                return ("OpenBySerialNumber 失敗", false);
+            //bitBang.Dispose();
+
+            return ($"FT2232H [{serialNumber}] BitBangモード OK", true);
+        }
+        //*************************************************
         //アクセス：public
         //戻り値：<FTDeviceInfo> FT2232H List
         //機能：GetFT2232HDevicesを呼び出してFT2232Hアドレスを取得
