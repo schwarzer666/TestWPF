@@ -1,0 +1,1159 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:TemperatureCharacteristics.ViewModels"
+                    xmlns:models="clr-namespace:TemperatureCharacteristics.Models"
+					xmlns:controls="clr-namespace:TemperatureCharacteristics.Views.Controls">
+	<DataTemplate x:Key="SweepTabContentTemplate">
+		<Grid 
+			IsEnabled="{Binding DataContext.IsSmallTabCtrlEnabled, 
+			RelativeSource={RelativeSource AncestorType=TabControl}}"
+            Background="#FFE5E5E5">
+			<Grid.Resources>
+				<!--TargetType="Controlでは反映されない為個別でStyleを定義"TextBox, ComboBox, CheckBox, Button-->
+				<Style TargetType="TextBox">
+					<Setter Property="HorizontalAlignment" Value="Left"/>
+					<Setter Property="VerticalAlignment" Value="Center"/>
+					<Setter Property="FontSize" Value="10"/>
+					<Setter Property="Margin" Value="5,0,0,0"/>
+					<Setter Property="Width" Value="35"/>
+				</Style>
+				<Style TargetType="ComboBox">
+					<Setter Property="HorizontalAlignment" Value="Left"/>
+					<Setter Property="VerticalAlignment" Value="Center"/>
+					<Setter Property="FontSize" Value="10"/>
+				</Style>
+				<Style TargetType="CheckBox">
+					<Setter Property="HorizontalAlignment" Value="Left"/>
+					<Setter Property="VerticalAlignment" Value="Center"/>
+					<Setter Property="FontSize" Value="11"/>
+				</Style>
+				<Style TargetType="Button">
+					<Setter Property="HorizontalAlignment" Value="Left"/>
+					<Setter Property="VerticalAlignment" Value="Center"/>
+					<Setter Property="FontSize" Value="11"/>
+				</Style>
+				<Style TargetType="Label">
+					<Setter Property="HorizontalAlignment" Value="Left"/>
+					<Setter Property="VerticalAlignment" Value="Center"/>
+					<Setter Property="FontSize" Value="11"/>
+                    <Setter Property="ToolTipService.InitialShowDelay" Value="0" />
+					<Setter Property="ToolTipService.ShowDuration" Value="5000" />
+				</Style>
+                <Style TargetType="GroupBox">
+                    <Setter Property="HorizontalAlignment" Value="Left"/>
+                    <Setter Property="VerticalAlignment" Value="Top"/>
+                    <Setter Property="FontSize" Value="10"/>
+                </Style>
+            </Grid.Resources>
+			<!--Sweep Tab内 14行×9列-->
+			<Grid.RowDefinitions>
+				<RowDefinition Height="30"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="Auto"/>
+			</Grid.RowDefinitions>
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="50*"/>
+				<ColumnDefinition Width="75"/>
+				<ColumnDefinition Width="45*"/>
+				<ColumnDefinition Width="62*"/>
+				<ColumnDefinition Width="40"/>
+				<ColumnDefinition Width="50*"/>
+				<ColumnDefinition Width="65"/>
+				<ColumnDefinition Width="40"/>
+				<ColumnDefinition Width="53*"/>
+			</Grid.ColumnDefinitions>
+			<!--測定対象設定-->
+			<CheckBox 
+				Content="測定" 
+				IsChecked="{Binding MeasureOn, Mode=TwoWay}"
+				Margin="2,0,0,0"
+				Grid.Row="0" Grid.Column="0"/>
+			<TextBox 
+				Text="{Binding ItemHeader, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+				Margin="2,0,2,0"
+				Width="65"
+				Grid.Row="0" Grid.Column="1"/>
+			<CheckBox 
+				Content="normalSweep" 
+				IsChecked="{Binding NormalSweepCheck, Mode=TwoWay}"
+				Margin="2,0,0,0"
+				Grid.Row="0" Grid.Column="2"
+				Grid.ColumnSpan="2"/>
+			<CheckBox 
+				Content="PulseGen" 
+				IsChecked="{Binding PulseGenUseCheck, Mode=TwoWay}"
+				Visibility="{Binding NormalSweepCheck, Converter={StaticResource InverseBooleanToVisibilityConverter}}"
+				Margin="2,0,0,0"
+				Grid.Row="0" Grid.Column="4"
+				Grid.ColumnSpan="2"/>
+			<!--電源設定-->
+			<GroupBox
+				Header="電源設定" 
+				Background="LightBlue"
+				Margin="0"
+				Grid.Row="1" Grid.Column="0"
+				Grid.RowSpan="6" Grid.ColumnSpan="6">
+				<Grid>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+					</Grid.RowDefinitions>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="50*"/>
+						<ColumnDefinition Width="75"/>
+						<ColumnDefinition Width="45*"/>
+						<ColumnDefinition Width="62*"/>
+						<ColumnDefinition Width="40"/>
+						<ColumnDefinition Width="50*"/>
+					</Grid.ColumnDefinitions>
+					<Label 
+						Content="Action"  
+						Margin="5,0,0,0"
+						Grid.Row="0" Grid.Column="1"/>
+					<Label 
+						Content="Mode"
+						Margin="1,0,0,0"
+						Grid.Row="0" Grid.Column="2"/>
+					<Label 
+						Content="Range"  
+						Margin="5,0,0,0"
+						Grid.Row="0" Grid.Column="3"/>
+					<Label 
+						Content="Limit(空白=default)" 
+						FontSize="9"
+						Grid.Row="0" Grid.Column="4"
+						Grid.ColumnSpan="2"/>
+					<Label 
+						Content="電源1" 
+						IsEnabled="{Binding SourceConfig.SourceFunc1Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+						Margin="5,0,0,0"
+						Grid.Row="1" Grid.Column="0"/>
+					<ComboBox  
+						ItemsSource="{StaticResource ComboItems_Func}" 
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding SourceConfig.SourceFunc1Index, Mode=TwoWay, FallbackValue=0}"
+						Margin="0" 
+						Width="75"
+						Grid.Row="1" Grid.Column="1"/>
+					<ComboBox 
+						ItemsSource="{StaticResource ComboItems_Mode}"
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding SourceConfig.SourceMode1Index, Mode=TwoWay, FallbackValue=0}"
+						IsEnabled="{Binding SourceConfig.SourceFunc1Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+						Margin="1,0,0,0" 
+						Width="40"
+						Grid.Row="1" Grid.Column="2"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_SourceRang}" 
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding SourceConfig.SourceRang1Index, Mode=TwoWay, FallbackValue=0}"
+						IsEnabled="{Binding SourceConfig.SourceFunc1Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+						Margin="0" 
+						Width="60"
+						Grid.Row="1" Grid.Column="3"/>
+					<TextBox 
+						Text="{Binding SourceConfig.SourceLimit1, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						IsEnabled="{Binding SourceConfig.SourceFunc1Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+						Grid.Row="1" Grid.Column="4"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_SourceLimit}" 
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding SourceConfig.SourceLimit1Index, Mode=TwoWay, FallbackValue=0}"
+						IsEnabled="{Binding SourceConfig.SourceFunc1Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+						Margin="1,0,0,0" 
+						Width="45"
+						Grid.Row="1" Grid.Column="5"/>
+					<Label 
+						Content="電源2" 
+						IsEnabled="{Binding SourceConfig.SourceFunc2Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+						Margin="5,0,0,0"
+						Grid.Row="2" Grid.Column="0"/>
+					<ComboBox 
+						ItemsSource="{StaticResource ComboItems_Func}" 
+						DisplayMemberPath="Name"
+						IsReadOnly="True"
+						SelectedIndex="{Binding SourceConfig.SourceFunc2Index, Mode=TwoWay, FallbackValue=0}"
+						Margin="0" 
+						Width="75"
+						Grid.Row="2" Grid.Column="1"/>
+					<ComboBox 
+						ItemsSource="{StaticResource ComboItems_Mode}"
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding SourceConfig.SourceMode2Index, Mode=TwoWay, FallbackValue=0}"
+						IsEnabled="{Binding SourceConfig.SourceFunc2Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+						Margin="1,0,0,0" 
+						Width="40"
+						Grid.Row="2" Grid.Column="2"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_SourceRang}"
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding SourceConfig.SourceRang2Index, Mode=TwoWay, FallbackValue=0}"
+						IsEnabled="{Binding SourceConfig.SourceFunc2Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+						Margin="0" 
+						Width="60"
+						Grid.Row="2" Grid.Column="3"/>
+					<TextBox 
+						Text="{Binding SourceConfig.SourceLimit2, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						IsEnabled="{Binding SourceConfig.SourceFunc2Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+						Grid.Row="2" Grid.Column="4"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_SourceLimit}" 
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding SourceConfig.SourceLimit2Index, Mode=TwoWay, FallbackValue=0}"
+						IsEnabled="{Binding SourceConfig.SourceFunc2Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+						Margin="1,0,0,0" 
+						Width="45"
+						Grid.Row="2" Grid.Column="5"/>
+					<Label 
+						Content="電源3" 
+						IsEnabled="{Binding SourceConfig.SourceFunc3Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+						Margin="5,0,0,0"
+						Grid.Row="3" Grid.Column="0"/>
+					<ComboBox 
+						ItemsSource="{StaticResource ComboItems_Func}"
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding SourceConfig.SourceFunc3Index, Mode=TwoWay, FallbackValue=0}"
+						Margin="0" 
+						Width="75"
+						Grid.Row="3" Grid.Column="1"/>
+					<ComboBox 
+						ItemsSource="{StaticResource ComboItems_Mode}"
+						DisplayMemberPath="Name"
+						IsReadOnly="True"
+						SelectedIndex="{Binding SourceConfig.SourceMode3Index, Mode=TwoWay, FallbackValue=0}"
+						IsEnabled="{Binding SourceConfig.SourceFunc3Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+						Margin="1,0,0,0"  
+						Width="40"
+						Grid.Row="3" Grid.Column="2"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_SourceRang}"
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding SourceConfig.SourceRang3Index, Mode=TwoWay, FallbackValue=0}"
+						IsEnabled="{Binding SourceConfig.SourceFunc3Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+						Margin="0" 
+						Width="60"
+						Grid.Row="3" Grid.Column="3"/>
+					<TextBox 
+						Text="{Binding SourceConfig.SourceLimit3, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						IsEnabled="{Binding SourceConfig.SourceFunc3Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+						Grid.Row="3" Grid.Column="4"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_SourceLimit}" 
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding SourceConfig.SourceLimit3Index, Mode=TwoWay, FallbackValue=0}"
+						IsEnabled="{Binding SourceConfig.SourceFunc3Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+						Margin="1,0,0,0" 
+						Width="45"
+						Grid.Row="3" Grid.Column="5"/>
+					<Label 
+						Content="電源4"
+						IsEnabled="{Binding SourceConfig.SourceFunc4Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+						Margin="5,0,0,0"
+						Grid.Row="4" Grid.Column="0"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_Func}" 
+						DisplayMemberPath="Name"
+						IsReadOnly="True"
+						SelectedIndex="{Binding SourceConfig.SourceFunc4Index, Mode=TwoWay, FallbackValue=0}"
+						Margin="0" 
+						Width="75"
+						Grid.Row="4" Grid.Column="1"/>
+					<ComboBox 
+						ItemsSource="{StaticResource ComboItems_Mode}"
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding SourceConfig.SourceMode4Index, Mode=TwoWay, FallbackValue=0}"
+						IsEnabled="{Binding SourceConfig.SourceFunc4Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+						Margin="1,0,0,0" 
+						Width="40"
+						Grid.Row="4" Grid.Column="2"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_SourceRang}" 
+						DisplayMemberPath="Name"
+						IsReadOnly="True"
+						SelectedIndex="{Binding SourceConfig.SourceRang4Index, Mode=TwoWay, FallbackValue=0}"
+						IsEnabled="{Binding SourceConfig.SourceFunc4Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+						Margin="0"  
+						Width="60"
+						Grid.Row="4" Grid.Column="3"/>
+					<TextBox 
+						Text="{Binding SourceConfig.SourceLimit4, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						IsEnabled="{Binding SourceConfig.SourceFunc4Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+						Grid.Row="4" Grid.Column="4"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_SourceLimit}" 
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding SourceConfig.SourceLimit4Index, Mode=TwoWay, FallbackValue=0}"
+						IsEnabled="{Binding SourceConfig.SourceFunc4Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+						Margin="1,0,0,0" 
+						Width="45"
+						Grid.Row="4" Grid.Column="5"/>
+				</Grid>
+			</GroupBox>
+			<!--Const設定-->
+			<GroupBox
+				Header="Const設定" 
+				Background="LightBlue"
+				Margin="0"
+				Grid.Row="1" Grid.Column="6"
+				Grid.RowSpan="4" Grid.ColumnSpan="3"
+				Panel.ZIndex="0">
+				<Grid>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+					</Grid.RowDefinitions>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="60"/>
+						<ColumnDefinition Width="40"/>
+						<ColumnDefinition Width="53*"/>
+					</Grid.ColumnDefinitions>
+					<Label 
+						Content="Const値1"  
+						Margin="0"
+						Grid.Row="0" Grid.Column="0"/>
+					<TextBox  
+						Text="{Binding ConstConfig.Const1, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						Grid.Row="0" Grid.Column="1"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_Units}" 
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding ConstConfig.Const1UnitIndex, Mode=TwoWay, FallbackValue=0}"
+						Margin="0" 
+						Width="45"
+						Grid.Row="0" Grid.Column="2"/>
+					<Label 
+						Content="Const値2"  
+						Margin="0"
+						Grid.Row="1" Grid.Column="0"/>
+					<TextBox  
+						Text="{Binding ConstConfig.Const2, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						Grid.Row="1" Grid.Column="1"/>
+					<ComboBox 
+						ItemsSource="{StaticResource ComboItems_Units}" 
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding ConstConfig.Const2UnitIndex, Mode=TwoWay, FallbackValue=0}"
+						Margin="0" 
+						Width="45"
+						Grid.Row="1" Grid.Column="2"/>
+					<Label 
+						Content="Const値3"  
+						Margin="0"
+						Grid.Row="2" Grid.Column="0"/>
+					<TextBox  
+						Text="{Binding ConstConfig.Const3, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						Grid.Row="2" Grid.Column="1"/>
+					<ComboBox 
+						ItemsSource="{StaticResource ComboItems_Units}" 
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding ConstConfig.Const3UnitIndex, Mode=TwoWay, FallbackValue=0}"
+						Margin="0" 
+						Width="45"
+						Grid.Row="2" Grid.Column="2"/>
+				</Grid>
+			</GroupBox>
+			<!--Sweep設定-->
+			<GroupBox
+				Header="Sweep設定" 
+				Background="LightYellow"
+				Margin="0"
+				Grid.Row="5" Grid.Column="6"
+				Grid.RowSpan="7" Grid.ColumnSpan="3"
+				Panel.ZIndex="0">
+				<Grid>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+					</Grid.RowDefinitions>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="60"/>
+						<ColumnDefinition Width="40"/>
+						<ColumnDefinition Width="53*"/>
+					</Grid.ColumnDefinitions>
+					<Label 
+						Content="Min値" 
+						Visibility="{Binding PulseGenUseCheck, Converter={StaticResource InverseBooleanToVisibilityConverter}}"
+						Margin="0"
+						Grid.Row="0" Grid.Column="0"/>
+					<TextBox 
+						Text="{Binding SweepConfig.MinValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						Visibility="{Binding PulseGenUseCheck, Converter={StaticResource InverseBooleanToVisibilityConverter}}"
+						Grid.Row="0" Grid.Column="1"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_Units}" 
+						DisplayMemberPath="Name"
+						IsReadOnly="True"
+						SelectedIndex="{Binding SweepConfig.MinVUnitIndex, Mode=TwoWay, FallbackValue=0}"
+						Visibility="{Binding PulseGenUseCheck, Converter={StaticResource InverseBooleanToVisibilityConverter}}"
+						Margin="0" 
+						Width="45"
+						Grid.Row="0" Grid.Column="2"/>
+					<Label 
+						Content="Max値"
+						Visibility="{Binding PulseGenUseCheck, Converter={StaticResource InverseBooleanToVisibilityConverter}}"
+						Margin="0" 
+						Grid.Row="1" Grid.Column="0"/>
+					<TextBox  
+						Text="{Binding SweepConfig.MaxValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						Visibility="{Binding PulseGenUseCheck, Converter={StaticResource InverseBooleanToVisibilityConverter}}"
+						Grid.Row="1" Grid.Column="1"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_Units}"
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding SweepConfig.MaxVUnitIndex, Mode=TwoWay, FallbackValue=0}"
+						Visibility="{Binding PulseGenUseCheck, Converter={StaticResource InverseBooleanToVisibilityConverter}}"
+						Margin="0" 
+						Width="45"
+						Grid.Row="1" Grid.Column="2"/>
+					<Label 
+						Content="Directional"
+						Visibility="{Binding PulseGenUseCheck, Converter={StaticResource InverseBooleanToVisibilityConverter}}"
+						FontSize="10"
+						Margin="0"
+						Grid.Row="2" Grid.Column="0"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_Directional}" 
+						DisplayMemberPath="Name"
+						IsReadOnly="True"
+						SelectedIndex="{Binding SweepConfig.DirectionalIndex, Mode=TwoWay, FallbackValue=0}"
+						Visibility="{Binding PulseGenUseCheck, Converter={StaticResource InverseBooleanToVisibilityConverter}}"
+						Margin="1,0,0,0" 
+						Width="50"
+						Grid.Row="2" Grid.Column="1"
+						Grid.ColumnSpan="2"/>
+					<Label 
+						Content="StepTime"  
+						Margin="0"
+						Grid.Row="3" Grid.Column="0"/>
+					<TextBox  
+						Text="{Binding SweepConfig.StepTime, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						Grid.Row="3" Grid.Column="1"/>
+					<ComboBox 
+						ItemsSource="{StaticResource ComboItems_tUnits}" 
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding SweepConfig.StepTimeUnitIndex, Mode=TwoWay, FallbackValue=0}"
+						Margin="0"  
+						Width="45"
+						Grid.Row="3" Grid.Column="2"/>
+					<!--↓Normal Sweep時表示-->
+					<StackPanel  
+						Visibility="{Binding NormalSweepCheck, Converter={StaticResource BooleanToVisibility}}"
+						Margin="0"
+						Grid.Row="4" Grid.Column="0"
+						Grid.RowSpan="5" Grid.ColumnSpan="3">
+						<Grid>
+							<Grid.RowDefinitions>
+								<RowDefinition Height="25"/>
+								<RowDefinition Height="25"/>
+								<RowDefinition Height="25"/>
+								<RowDefinition Height="25"/>
+								<RowDefinition Height="25"/>
+							</Grid.RowDefinitions>
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="60"/>
+								<ColumnDefinition Width="40"/>
+								<ColumnDefinition Width="53*"/>
+							</Grid.ColumnDefinitions>
+							<Label 
+								Content="Step値"  
+								Margin="0"
+								Grid.Row="0" Grid.Column="0"/>
+							<TextBox  
+								Text="{Binding SweepConfig.StepValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+								Grid.Row="0" Grid.Column="1"/>
+							<ComboBox  
+								ItemsSource="{StaticResource ComboItems_Units}" 
+								DisplayMemberPath="Name"
+								IsReadOnly="True"
+								SelectedIndex="{Binding SweepConfig.StepUnitIndex, Mode=TwoWay}"
+								Margin="0"
+								Width="45"
+								Grid.Row="0" Grid.Column="2"/>
+							<Label 
+								Content="Stanby"  
+								Margin="0"
+								Grid.Row="1" Grid.Column="0"/>
+							<TextBox  
+								Text="{Binding SweepConfig.StanbyValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+								Grid.Row="1" Grid.Column="1"/>
+							<ComboBox  
+								ItemsSource="{StaticResource ComboItems_tUnits}"
+								DisplayMemberPath="Name"
+								IsReadOnly="True"
+								SelectedIndex="{Binding SweepConfig.StanbyUnitIndex, Mode=TwoWay}"
+								Margin="0" 
+								Width="45"
+								Grid.Row="1" Grid.Column="3"/>
+						</Grid>
+					</StackPanel>
+				</Grid>
+			</GroupBox>
+			<!--Sweep検出/復帰挙動 (Normal Sweep時非表示)-->
+			<GroupBox
+				Header="Sweep検出/復帰挙動" 
+				Visibility="{Binding NormalSweepCheck, Converter={StaticResource InverseBooleanToVisibilityConverter}}"
+				Background="LightPink"
+				Margin="0"
+				Grid.Row="10" Grid.Column="6"
+				Grid.RowSpan="5" Grid.ColumnSpan="3"
+				Panel.ZIndex="1">
+				<Grid>
+					<!--Sweep挙動 normal-->
+					<!--　→①全電源初期値に戻す（Sweep電源=Start値,Constant電源=const値-->
+					<!--　→②指定秒数待機で検出/復帰を確認-->
+					<!--　→③Sweep継続-->
+					<!--Sweep挙動 normal+α-->
+					<!--　→①全電源初期値に戻す（Sweep電源=Start値,Constant電源=const値-->
+					<!--　→②ユーザー選択電源をユーザー入力値に設定-->
+					<!--　→③指定秒数待機で検出/復帰を確認-->
+					<!--　→④ユーザー選択電源を初期値に設定-->
+					<!--　→⑤Sweep継続-->
+					<Grid.RowDefinitions>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+					</Grid.RowDefinitions>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="55"/>
+						<ColumnDefinition Width="40"/>
+						<ColumnDefinition Width="50"/>
+					</Grid.ColumnDefinitions>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_DetRelAct}"
+						IsReadOnly="True"
+						SelectedIndex="{Binding DetectReleaseConfig.DetectReleaseIndex, Mode=TwoWay}"
+						Margin="0"
+						Width="100"
+						Grid.Row="0" Grid.Column="0"
+						Grid.ColumnSpan="3"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_Source}"
+						DisplayMemberPath="Name"
+						IsReadOnly="True"
+						SelectedIndex="{Binding DetectReleaseConfig.DetectSourceAIndex, Mode=TwoWay}"
+						IsEnabled="{Binding DetectReleaseConfig.DetectReleaseIndex, Converter={StaticResource DetectReleaseIndexToEnabledConverter}}"
+						Margin="0"
+						Width="55"
+						Grid.Row="1" Grid.Column="0"/>
+					<TextBox
+						Text="{Binding DetectReleaseConfig.DetectReleaseA, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						IsEnabled="{Binding DetectReleaseConfig.DetectReleaseIndex, Converter={StaticResource DetectReleaseIndexToEnabledConverter}}"
+						Grid.Row="1" Grid.Column="1"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_Units}"
+						DisplayMemberPath="Name"
+						IsReadOnly="True"
+						SelectedIndex="{Binding DetectReleaseConfig.DetectUnitAIndex, Mode=TwoWay}"
+						IsEnabled="{Binding DetectReleaseConfig.DetectReleaseIndex, Converter={StaticResource DetectReleaseIndexToEnabledConverter}}"
+						Margin="0"
+						Width="45"
+						Grid.Row="1" Grid.Column="2"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_Source}"
+						DisplayMemberPath="Name"
+						IsReadOnly="True"
+						SelectedIndex="{Binding DetectReleaseConfig.DetectSourceBIndex, Mode=TwoWay}"
+						IsEnabled="{Binding DetectReleaseConfig.DetectReleaseIndex, Converter={StaticResource DetectReleaseIndexToEnabledConverter}}"
+						Margin="0"
+						Width="55"
+						Grid.Row="2" Grid.Column="0"/>
+					<TextBox
+						Text="{Binding DetectReleaseConfig.DetectReleaseB, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						IsEnabled="{Binding DetectReleaseConfig.DetectReleaseIndex, Converter={StaticResource DetectReleaseIndexToEnabledConverter}}"
+						Grid.Row="2" Grid.Column="1"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_Units}"
+						DisplayMemberPath="Name"
+						IsReadOnly="True"
+						SelectedIndex="{Binding DetectReleaseConfig.DetectUnitBIndex, Mode=TwoWay}"
+						IsEnabled="{Binding DetectReleaseConfig.DetectReleaseIndex, Converter={StaticResource DetectReleaseIndexToEnabledConverter}}"
+						Margin="0"
+						Width="45"
+						Grid.Row="2" Grid.Column="2"/>
+					<Label 
+						Content="保持時間" 
+						FontSize="10"
+						Margin="0"
+						Grid.Row="3" Grid.Column="0"/>
+					<TextBox
+						Text="{Binding DetectReleaseConfig.CheckTime, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						Grid.Row="3" Grid.Column="1"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_tUnits}"
+						DisplayMemberPath="Name"
+						IsReadOnly="True"
+						SelectedIndex="{Binding DetectReleaseConfig.CheckTimeUnitIndex, Mode=TwoWay}"
+						Margin="0"
+						Width="45"
+						Grid.Row="3" Grid.Column="2"/>
+				</Grid>
+			</GroupBox>
+			<!--OSC設定 (Normal Sweep時非表示)-->
+			<GroupBox
+				Header="OSC設定" 
+				Background="Lime"
+				Visibility="{Binding NormalSweepCheck, Converter={StaticResource InverseBooleanToVisibilityConverter}}"
+				Margin="0"
+				Grid.Row="7" Grid.Column="0"
+				Grid.RowSpan="8" Grid.ColumnSpan="3">
+				<Grid>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+					</Grid.RowDefinitions>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="50*"/>
+						<ColumnDefinition Width="65"/>
+						<ColumnDefinition Width="45*"/>
+					</Grid.ColumnDefinitions>
+					<Label 
+						Content="Range" 
+						Grid.Row="0" Grid.Column="1"/>
+					<Label 
+						Content="Position" 
+						FontSize="10"
+						Grid.Row="0" Grid.Column="2"/>
+					<Label 
+						Content="CH1"
+						Margin="2,0,0,0"
+						Grid.Row="1" Grid.Column="0"/>
+					<ComboBox 
+						ItemsSource="{StaticResource ComboItems_OSCRang}" 
+						DisplayMemberPath="Name"
+						IsReadOnly="True"
+						SelectedIndex="{Binding OscConfig.OSCRang1Index, Mode=TwoWay, FallbackValue=0}"
+						Margin="0" 
+						Width="60"
+						Grid.Row="1" Grid.Column="1"/>
+					<TextBox 
+						Text="{Binding OscConfig.OSCPos1, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						Grid.Row="1" Grid.Column="2"/>
+					<Label 
+						Content="CH2"  
+						Margin="2,0,0,0"
+						Grid.Row="2" Grid.Column="0"/>
+					<ComboBox  
+						ItemsSource="{StaticResource ComboItems_OSCRang}"
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding OscConfig.OSCRang2Index, Mode=TwoWay, FallbackValue=0}"
+						Margin="0"  
+						Width="60"
+						Grid.Row="2" Grid.Column="1"/>
+					<TextBox  
+						Text="{Binding OscConfig.OSCPos2, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						Grid.Row="2" Grid.Column="2"/>
+					<Label 
+						Content="CH3"  
+						Margin="2,0,0,0"
+						Grid.Row="3" Grid.Column="0"/>
+					<ComboBox 
+						ItemsSource="{StaticResource ComboItems_OSCRang}"
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding OscConfig.OSCRang3Index, Mode=TwoWay, FallbackValue=0}"
+						Margin="0" 
+						Width="60"
+						Grid.Row="3" Grid.Column="1"/>
+					<TextBox   
+						Text="{Binding OscConfig.OSCPos3, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						Grid.Row="3" Grid.Column="2"/>
+					<Label 
+						Content="CH4"  
+						Margin="2,0,0,0"
+						Grid.Row="4" Grid.Column="0"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_OSCRang}" 
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding OscConfig.OSCRang4Index, Mode=TwoWay, FallbackValue=0}"
+						Margin="0"  
+						Width="60"
+						Grid.Row="4" Grid.Column="1"/>
+					<TextBox 
+						Text="{Binding OscConfig.OSCPos4, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						Grid.Row="4" Grid.Column="2"/>
+					<Label 
+						Content="TRIG"  
+						Margin="2,0,0,0"
+						Grid.Row="5" Grid.Column="0"/>
+					<ComboBox 
+						ItemsSource="{StaticResource ComboItems_TrigSource}"
+						IsReadOnly="True"
+						SelectedIndex="{Binding OscConfig.TrigSourceIndex, Mode=TwoWay, FallbackValue=0}"
+						Margin="0"  
+						Width="47"
+						Grid.Row="5" Grid.Column="1">
+						<ComboBox.ItemTemplate>
+							<DataTemplate>
+								<TextBlock 
+									Text="{Binding Name}"
+									Background="{Binding Tag, Converter={StaticResource TagToBrushConverter}}"/>
+							</DataTemplate>
+						</ComboBox.ItemTemplate>
+					</ComboBox>
+					<ComboBox 
+						ItemsSource="{StaticResource ComboItems_TrigDirectional}"
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding OscConfig.TrigDirectionalIndex, Mode=TwoWay, FallbackValue=0}"
+						Margin="0" 
+						Width="40"
+						Grid.Row="5" Grid.Column="2"/>
+					<Label 
+						Content="TRIGLev"  
+						Margin="2,0,0,0"
+						FontSize="10"
+						Grid.Row="6" Grid.Column="0"/>
+					<TextBox  
+						Text="{Binding OscConfig.OSCTrigLevel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						Grid.Row="6" Grid.Column="1"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_Units}"
+						DisplayMemberPath="Name"
+						IsReadOnly="True"
+						SelectedIndex="{Binding OscConfig.LevelUnitIndex, Mode=TwoWay, FallbackValue=0}"
+						Margin="0" 
+						Width="45"
+						Grid.Row="6" Grid.Column="2"/>
+				</Grid>
+			</GroupBox>
+			<!--PG設定 (Normal Sweep時非表示)-->
+			<GroupBox
+				Header="PG設定(PulseGenCheck時有効)" 
+				Background="GreenYellow"
+				Visibility="{Binding NormalSweepCheck, Converter={StaticResource InverseBooleanToVisibilityConverter}}"
+				IsEnabled="{Binding PulseGenUseCheck}"
+				Margin="0"
+				Grid.Row="7" Grid.Column="3"
+				Grid.RowSpan="8" Grid.ColumnSpan="3">
+				<Grid>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+					</Grid.RowDefinitions>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="62*"/>
+						<ColumnDefinition Width="40"/>
+						<ColumnDefinition Width="50*"/>
+					</Grid.ColumnDefinitions>
+					<Label 
+						Content="OUTP CH"
+						Grid.Row="0" Grid.Column="0"/>
+					<ComboBox 
+						ItemsSource="{StaticResource ComboItems_OutputCH}"
+						IsReadOnly="True"
+						SelectedIndex="{Binding PulseGenConfig.OutputChIndex, Mode=TwoWay, FallbackValue=1}"
+						Margin="0"  
+						Width="47"
+						Grid.Row="0" Grid.Column="1"
+						Grid.ColumnSpan="2">
+						<ComboBox.ItemTemplate>
+							<DataTemplate>
+								<TextBlock 
+									Text="{Binding Name}"
+									Background="{Binding Tag, Converter={StaticResource TagToBrushConverter}}"/>
+							</DataTemplate>
+						</ComboBox.ItemTemplate>
+					</ComboBox>
+					<Label 
+						Content="Low Lev." 
+						Grid.Row="1" Grid.Column="0">
+						<Label.ToolTip>
+							<ToolTip>
+								<TextBlock>
+								Limit値を入力
+								</TextBlock>
+							</ToolTip>
+						</Label.ToolTip>
+					</Label>
+					<TextBox 
+						Text="{Binding PulseGenConfig.LowValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						Grid.Row="1" Grid.Column="1"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_Units}"
+						DisplayMemberPath="Name"
+						IsReadOnly="True"
+						SelectedIndex="{Binding PulseGenConfig.LowVUnitIndex, Mode=TwoWay, FallbackValue=1}"
+						Margin="0" 
+						Width="45"
+						Grid.Row="1" Grid.Column="2"/>
+					<Label 
+						Content="High Lev." 
+						Grid.Row="2" Grid.Column="0">
+						<Label.ToolTip>
+							<ToolTip>
+								<TextBlock>
+								Limit値を入力
+								</TextBlock>
+							</ToolTip>
+						</Label.ToolTip>
+					</Label>
+					<TextBox 
+						Text="{Binding PulseGenConfig.HighValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						Grid.Row="2" Grid.Column="1"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_Units}"
+						DisplayMemberPath="Name"
+						IsReadOnly="True"
+						SelectedIndex="{Binding PulseGenConfig.HighVUnitIndex, Mode=TwoWay, FallbackValue=1}"
+						Margin="0" 
+						Width="45"
+						Grid.Row="2" Grid.Column="2"/>
+					<Label 
+						Content="出力極性" 
+						Grid.Row="3" Grid.Column="0">
+						<Label.ToolTip>
+							<ToolTip>
+								<TextBlock>
+								"Normal"を選択した場合HighLev.を+方向にSweep<LineBreak/>
+								"Inverted"を選択した場合LowLev.を-方向にSweep
+								</TextBlock>
+							</ToolTip>
+						</Label.ToolTip>
+					</Label>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_Polarity}"
+						DisplayMemberPath="Name"
+						IsReadOnly="True"
+						SelectedIndex="{Binding PulseGenConfig.PolarityIndex, Mode=TwoWay, FallbackValue=0}"
+						Margin="0" 
+						Width="70"
+						Grid.Row="3" Grid.Column="1"
+						Grid.ColumnSpan="2"/>
+					<Label 
+						Content="Period" 
+						Grid.Row="4" Grid.Column="0"/>
+					<TextBox 
+						Text="{Binding PulseGenConfig.PeriodValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						Grid.Row="4" Grid.Column="1"/>
+					<ComboBox 
+						ItemsSource="{StaticResource ComboItems_tUnits}" 
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding PulseGenConfig.PeriodUnitIndex, Mode=TwoWay, FallbackValue=0}"
+						Margin="0"  
+						Width="45"
+						Grid.Row="4" Grid.Column="2"/>
+					<Label 
+						Content="Width" 
+						Grid.Row="5" Grid.Column="0">
+						<Label.ToolTip>
+							<ToolTip>
+								<TextBlock>
+								出力極性"Normal"の場合HighLev.区間の幅<LineBreak/>
+								出力極性"Inverted"の場合LowLev.区間の幅
+								</TextBlock>
+							</ToolTip>
+						</Label.ToolTip>
+					</Label>
+					<TextBox 
+						Text="{Binding PulseGenConfig.WidthValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						Grid.Row="5" Grid.Column="1"/>
+					<ComboBox 
+						ItemsSource="{StaticResource ComboItems_tUnits}" 
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding PulseGenConfig.WidthUnitIndex, Mode=TwoWay, FallbackValue=1}"
+						Margin="0"  
+						Width="45"
+						Grid.Row="5" Grid.Column="2"/>
+					<Label 
+						Content="OUTP Z" 
+						Grid.Row="6" Grid.Column="0"/>
+					<ComboBox 
+						ItemsSource="{StaticResource ComboItems_OutputZ}"
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding PulseGenConfig.OutputLoadIndex, Mode=TwoWay, FallbackValue=0}"
+						Margin="0" 
+						Width="60"
+						Grid.Row="6" Grid.Column="1"
+						Grid.ColumnSpan="2"/>
+				</Grid>
+			</GroupBox>
+			<!--DMM設定 (Normal Sweep時表示)-->
+			<GroupBox 
+				Header="DMM設定" 
+				Background="SkyBlue"
+				Visibility="{Binding NormalSweepCheck, Converter={StaticResource BooleanToVisibility}}"
+				Grid.Row="7" Grid.Column="0"
+				Grid.RowSpan="7" Grid.ColumnSpan="6">
+				<Grid>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+						<RowDefinition Height="25"/>
+					</Grid.RowDefinitions>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="50"/>
+						<ColumnDefinition Width="55"/>
+						<ColumnDefinition Width="55"/>
+						<ColumnDefinition Width="40"/>
+						<ColumnDefinition Width="50"/>
+					</Grid.ColumnDefinitions>
+					<Label 
+						Content="Measure"  
+						Margin="0"
+						Grid.Row="0" Grid.Column="1"/>
+					<Label 
+						Content="Range"  
+						Margin="0"
+						Grid.Row="0" Grid.Column="2"/>
+					<Label 
+						Content="NPLC"  
+						Margin="0"
+						Grid.Row="0" Grid.Column="3"/>
+					<Label 
+						Content="Disp.ON"  
+						Margin="0"
+						Grid.Row="0" Grid.Column="4"/>
+					<Label 
+						Content="DMM1"
+						Grid.Row="1" Grid.Column="0"/>
+					<ComboBox 
+						ItemsSource="{StaticResource ComboItems_Mode}"
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding DmmConfig.MeasMode1Index, Mode=TwoWay, FallbackValue=0}" 
+						Margin="5,0,0,0"
+						Grid.Row="1" Grid.Column="1"/>
+					<ComboBox 
+						ItemsSource="{StaticResource ComboItems_MeasureRang}" 
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding DmmConfig.MeasRang1Index, Mode=TwoWay, FallbackValue=0}"
+						Grid.Row="1" Grid.Column="2"/>
+					<TextBox 
+						Text="{Binding DmmConfig.Meas1plc, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						Grid.Row="1" Grid.Column="3"/>
+					<CheckBox 
+						IsChecked="{Binding DmmConfig.Meas1DispOn, Mode=TwoWay}"
+						Margin="15,0,0,0"
+						Grid.Row="1" Grid.Column="4"/>
+					<Label 
+						Content="DMM2"  
+						Grid.Row="2" Grid.Column="0"/>
+					<ComboBox 
+						ItemsSource="{StaticResource ComboItems_Mode}" 
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding DmmConfig.MeasMode2Index, Mode=TwoWay, FallbackValue=0}"
+						Margin="5,0,0,0"
+						Grid.Row="2" Grid.Column="1"/>
+					<ComboBox 
+						ItemsSource="{StaticResource ComboItems_MeasureRang}" 
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding DmmConfig.MeasRang2Index, Mode=TwoWay, FallbackValue=0}"
+						Grid.Row="2" Grid.Column="2"/>
+					<TextBox 
+						Text="{Binding DmmConfig.Meas2plc, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						Grid.Row="2" Grid.Column="3"/>
+					<CheckBox 
+						IsChecked="{Binding DmmConfig.Meas2DispOn, Mode=TwoWay}"
+						Margin="15,0,0,0"
+						Grid.Row="2" Grid.Column="4"/>
+					<Label 
+						Content="DMM3"  
+						Grid.Row="3" Grid.Column="0"/>
+					<ComboBox 
+						ItemsSource="{StaticResource ComboItems_Mode}"
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding DmmConfig.MeasMode3Index, Mode=TwoWay, FallbackValue=0}"
+						Margin="5,0,0,0"
+						Grid.Row="3" Grid.Column="1"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_MeasureRang}" 
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding DmmConfig.MeasRang3Index, Mode=TwoWay, FallbackValue=0}"
+						Grid.Row="3" Grid.Column="2"/>
+					<TextBox
+						Text="{Binding DmmConfig.Meas3plc, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						Grid.Row="3" Grid.Column="3"/>
+					<CheckBox
+						IsChecked="{Binding DmmConfig.Meas3DispOn, Mode=TwoWay}"
+						Margin="15,0,0,0"
+						Grid.Row="3" Grid.Column="4"/>
+					<Label 
+						Content="DMM4"  
+						Grid.Row="4" Grid.Column="0"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_Mode}" 
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding DmmConfig.MeasMode4Index, Mode=TwoWay, FallbackValue=0}"
+						Margin="5,0,0,0"
+						Grid.Row="4" Grid.Column="1"/>
+					<ComboBox
+						ItemsSource="{StaticResource ComboItems_MeasureRang}" 
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding DmmConfig.MeasRang4Index, Mode=TwoWay, FallbackValue=0}"
+						Grid.Row="4" Grid.Column="2"/>
+					<TextBox
+						Text="{Binding DmmConfig.Meas4plc, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+						Grid.Row="4" Grid.Column="3"/>
+					<CheckBox
+						IsChecked="{Binding DmmConfig.Meas4DispOn, Mode=TwoWay}"
+						Margin="15,0,0,0"
+						Grid.Row="4" Grid.Column="4"/>
+					<Label 
+						Content="TRIG"  
+						Grid.Row="5" Grid.Column="0"/>
+					<ComboBox 
+						ItemsSource="{StaticResource ComboItems_dmmTrigSource}" 
+						DisplayMemberPath="Name" 
+						IsReadOnly="True"
+						SelectedIndex="{Binding DmmConfig.MeasTrigIndex, Mode=TwoWay, FallbackValue=0}"
+						Margin="5,0,0,0"
+						Grid.Row="5" Grid.Column="1"
+						Grid.ColumnSpan="2"/>
+				</Grid>
+			</GroupBox>
+			<!--Save,Load,プリセットボタン-->
+			<Grid
+				Grid.Row="15" Grid.Column="0"
+				Grid.ColumnSpan="9">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="100"/>
+					<ColumnDefinition Width="100"/>
+					<ColumnDefinition Width="100"/>
+				</Grid.ColumnDefinitions>
+				<Button
+					Content="条件Save"
+					Command="{Binding DataContext.SaveUserConfigCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                    CommandParameter="{Binding}"
+					Width="90"
+					Height="35"
+					Margin="5"
+					Grid.Row="0" Grid.Column="0"/>
+				<Button
+					Content="条件Save(全Tab)"
+					Command="{Binding DataContext.SaveAllUserConfigsCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                    CommandParameter="{Binding}"
+					Width="90"
+					Height="35"
+					Margin="5"
+					Grid.Row="1" Grid.Column="0"/>
+				<Button 
+					Content="条件Load"
+					Command="{Binding DataContext.LoadUserConfigCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                    CommandParameter="{Binding Converter={StaticResource PresetAndTabParameterConverter}}"
+					Width="90"
+					Height="35"
+					Margin="5"
+					Grid.Row="0" Grid.Column="1"/>
+				<Button
+					Content="条件Load(全Tab)"
+					Command="{Binding DataContext.LoadAllUserConfigsCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                    CommandParameter="{Binding}"
+					Width="90"
+					Height="35"
+					Margin="5"
+					Grid.Row="1" Grid.Column="1"/>
+				<Button
+					x:Name ="PresetButton"
+					Content="プリセット一覧"
+					Command="{Binding DataContext.OpenPresetPopupCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
+					CommandParameter="{Binding}"
+					Width="90"
+					Height="75"
+					Margin="5"
+					Grid.Row="0" Grid.Column="2"
+					Grid.RowSpan="2"/>
+				<!-- プリセットポップアップ -->
+				<Popup 
+					IsOpen="{Binding DataContext.IsPopupOpen, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}"
+					PlacementTarget="{Binding ElementName=PresetButton}"
+					Placement="Right"
+					AllowsTransparency="True"
+					PopupAnimation="Slide"
+					HorizontalOffset="5">
+					<Border Background="White" 
+                        BorderBrush="Gray" 
+                        BorderThickness="1" 
+                        CornerRadius="5" 
+                        Padding="10">
+						<ScrollViewer 
+							MaxHeight="200" 
+							VerticalScrollBarVisibility="Auto">
+							<StackPanel>
+								<!-- プリセット -->
+								<ItemsControl ItemsSource="{Binding DataContext.FilteredPresetButtons, RelativeSource={RelativeSource AncestorType=Window}}">
+									<ItemsControl.ItemTemplate>
+										<DataTemplate>
+											<Button 
+												Content="{Binding Name}" 
+												Command="{Binding DataContext.SelectPresetCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
+												CommandParameter="{Binding}"
+												Tag="{Binding Id}"
+												Background="{Binding BackgroundColor, Converter={StaticResource StringToBrushConverter}}"
+												Margin="5,2" 
+												Width="120"/>
+										</DataTemplate>
+									</ItemsControl.ItemTemplate>
+								</ItemsControl>
+							</StackPanel>
+						</ScrollViewer>
+					</Border>
+				</Popup>
+			</Grid>
+		</Grid>
+	</DataTemplate>
+</ResourceDictionary>
