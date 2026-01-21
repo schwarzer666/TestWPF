@@ -368,17 +368,17 @@
 							<ColumnDefinition Width="100*"/>
 						</Grid.ColumnDefinitions>
 						<RadioButton Content="リレー1" GroupName="RelayGroup" Margin="5,0" Grid.Row="0" 
-									 IsChecked="{Binding SelectedRelay, Converter={StaticResource RelayConverter}, ConverterParameter=1}"/>
+									 IsChecked="{Binding Relay.SelectedRelay, Converter={StaticResource RelayConverter}, ConverterParameter=1}"/>
 						<RadioButton Content="リレー2" GroupName="RelayGroup" Margin="5,0" Grid.Row="1" 
-									 IsChecked="{Binding SelectedRelay, Converter={StaticResource RelayConverter}, ConverterParameter=2}"/>
+									 IsChecked="{Binding Relay.SelectedRelay, Converter={StaticResource RelayConverter}, ConverterParameter=2}"/>
 						<RadioButton Content="リレー3" GroupName="RelayGroup" Margin="5,0" Grid.Row="2" 
-									 IsChecked="{Binding SelectedRelay, Converter={StaticResource RelayConverter}, ConverterParameter=3}"/>
+									 IsChecked="{Binding Relay.SelectedRelay, Converter={StaticResource RelayConverter}, ConverterParameter=3}"/>
 						<RadioButton Content="リレー4" GroupName="RelayGroup" Margin="5,0" Grid.Row="3" 
-									 IsChecked="{Binding SelectedRelay, Converter={StaticResource RelayConverter}, ConverterParameter=4}"/>
+									 IsChecked="{Binding Relay.SelectedRelay, Converter={StaticResource RelayConverter}, ConverterParameter=4}"/>
 						<RadioButton Content="リレー5" GroupName="RelayGroup" Margin="5,0" Grid.Row="4" 
-									 IsChecked="{Binding SelectedRelay, Converter={StaticResource RelayConverter}, ConverterParameter=5}"/>
+									 IsChecked="{Binding Relay.SelectedRelay, Converter={StaticResource RelayConverter}, ConverterParameter=5}"/>
 						<RadioButton Content="リレー6" GroupName="RelayGroup" Margin="5,0" Grid.Row="5" 
-									 IsChecked="{Binding SelectedRelay, Converter={StaticResource RelayConverter}, ConverterParameter=6}"/>
+									 IsChecked="{Binding Relay.SelectedRelay, Converter={StaticResource RelayConverter}, ConverterParameter=6}"/>
 						<Button 
 							Content="リレーON"
 							Command="{Binding Relay.SetRelayOnCommand}"
@@ -404,10 +404,10 @@
 						<CheckBox 
 							Content="複数個測定"
 							IsEnabled="{Binding Instruments[11].IsChecked}"
-							IsChecked="{Binding MultiSample, Mode=TwoWay}"/>
+							IsChecked="{Binding Relay.MultiSample, Mode=TwoWay}"/>
 					</GroupBox.Header>
 					<Grid 
-						IsEnabled="{Binding MultiSample}">
+						IsEnabled="{Binding Relay.MultiSample}">
 						<Grid.RowDefinitions>
 							<RowDefinition Height="30"/>
 							<RowDefinition Height="30"/>
@@ -422,7 +422,7 @@
 							Margin="0"
 							Grid.Row="0" Grid.Column="0"/>
 						<ComboBox 
-							SelectedValue="{Binding SampleCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+							SelectedValue="{Binding Relay.SampleCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
 							SelectedValuePath="Content"
 							SelectedIndex="0" 
 							Width="50"
@@ -509,7 +509,7 @@
 						<TabControl Grid.Row="0"
 							ItemsSource="{Binding Tabs}"
 							IsEnabled="{Binding IsBigTabCtrlEnabled}"
-							SelectedIndex="0"
+							SelectedIndex="{Binding SelectedIndex}"
 							VirtualizingStackPanel.IsVirtualizing="True"
 							CacheMode="BitmapCache"
 							Loaded="TabControl_Loaded"
@@ -559,13 +559,13 @@
 						</Grid.RowDefinitions>
 						<!--子Tab(各ItemTab) 1行目に配置-->
 						<TabControl Grid.Row="0"
-						ItemsSource="{Binding Tabs}"
-						IsEnabled="{Binding IsBigTabCtrlEnabled}"
-						SelectedIndex="0"
-						VirtualizingStackPanel.IsVirtualizing="True"
-						CacheMode="BitmapCache"
-						Loaded="TabControl_Loaded"
-						Margin="0">
+							ItemsSource="{Binding Tabs}"
+							IsEnabled="{Binding IsBigTabCtrlEnabled}"
+							SelectedIndex="{Binding SelectedIndex}"
+							VirtualizingStackPanel.IsVirtualizing="True"
+							CacheMode="BitmapCache"
+							Loaded="TabControl_Loaded"
+							Margin="0">
 							<!--ItemTabヘッダー-->
 							<TabControl.ItemTemplate>
 								<DataTemplate>
@@ -611,13 +611,13 @@
 						</Grid.RowDefinitions>
 						<!--子Tab(各ItemTab) 1行目に配置-->
 						<TabControl Grid.Row="0"
-						ItemsSource="{Binding Tabs}"
-						IsEnabled="{Binding IsBigTabCtrlEnabled}"
-						SelectedIndex="0"
-						VirtualizingStackPanel.IsVirtualizing="True"
-						CacheMode="BitmapCache"
-						Loaded="TabControl_Loaded"
-						Margin="0">
+							ItemsSource="{Binding Tabs}"
+							IsEnabled="{Binding IsBigTabCtrlEnabled}"
+							SelectedIndex="{Binding SelectedIndex}"
+							VirtualizingStackPanel.IsVirtualizing="True"
+							CacheMode="BitmapCache"
+							Loaded="TabControl_Loaded"
+							Margin="0">
 							<!--ItemTabヘッダー-->
 							<TabControl.ItemTemplate>
 								<DataTemplate>
@@ -802,11 +802,14 @@
 							HorizontalAlignment="Left"
 							Margin="30,0,0,0"
 							TextWrapping="Wrap"/>
+						<Label 
+							Content="設定保存初期フォルダ"/>
 						<TextBox 
-							x:Name="Debug_textbox2" 
-							Text="Debug Text(テスト表示)"
-							TextWrapping="Wrap"
-							VerticalScrollBarVisibility="Auto"/>
+							x:Name="SaveLoadDefaultFolder" 
+							Text="{Binding DebugSettings.SaveLoadDefaultFolder, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+							HorizontalAlignment="Left"
+							Margin="30,0,0,0"
+							TextWrapping="Wrap"/>
 						<TextBox 
 							x:Name="Debug_textbox3" 
 							Text="Debug Text(テスト表示)"
