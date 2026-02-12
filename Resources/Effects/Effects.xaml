@@ -1,0 +1,17 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+	<DropShadowEffect 
+        x:Key="PopupShadow"
+        BlurRadius="8"
+        ShadowDepth="2"
+        Opacity="0.25"/>
+
+	<DropShadowEffect 
+        x:Key="CardShadow"
+        Color="#55000000"
+        BlurRadius="12"
+        ShadowDepth="3"
+        Opacity="0.6"/>
+
+</ResourceDictionary>

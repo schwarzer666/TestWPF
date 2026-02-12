@@ -1,0 +1,17 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:converters="clr-namespace:TemperatureCharacteristics.Converters">
+
+	<BooleanToVisibilityConverter x:Key="BooleanToVisibility"/>
+	<converters:BooleanToOppositeConverter x:Key="BooleanToOppositeConverter"/>
+	<converters:BooleanToCollapsedVisibilityConverter x:Key="BooleanToCollapsedVisibilityConverter"/>
+	<converters:DetectReleaseIndexToEnabledConverter x:Key="DetectReleaseIndexToEnabledConverter"/>
+	<converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+	<converters:PlacementTargetToWindowDataContextConverter x:Key="PlacementTargetToWindowDataContextConverter"/>
+	<converters:PresetAndTabParameterConverter x:Key="PresetAndTabParameterConverter"/>
+	<converters:RelayValueToBoolConverter x:Key="RelayConverter"/>
+	<converters:SourceFuncIndexToEnabledConverter x:Key="SourceFuncIndexToEnabledConverter"/>
+	<converters:StringToBrushConverter x:Key="StringToBrushConverter"/>
+	<converters:TagToBrushConverter x:Key="TagToBrushConverter"/>
+
+</ResourceDictionary>

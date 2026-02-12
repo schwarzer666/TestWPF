@@ -1,0 +1,11 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+	<Style x:Key="BaseFrameworkElementStyle" TargetType="{x:Type FrameworkElement}">
+		<Setter Property="ToolTipService.InitialShowDelay" Value="0" />
+		<Setter Property="ToolTipService.ShowDuration" Value="5000" />
+	</Style>
+
+	<Style TargetType="{x:Type FrameworkElement}" BasedOn="{StaticResource BaseFrameworkElementStyle}"/>
+
+</ResourceDictionary>
