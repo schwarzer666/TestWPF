@@ -1,0 +1,205 @@
+﻿<UserControl x:Class="TemperatureCharacteristics.Views.Controls.SourceSettingControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:TemperatureCharacteristics.Views.Controls">
+	<Grid>
+		<GroupBox
+			Header="電源設定" 
+			Background="LightBlue">
+			<Grid>
+				<Grid.RowDefinitions>
+					<RowDefinition Height="25"/>
+					<RowDefinition Height="25"/>
+					<RowDefinition Height="25"/>
+					<RowDefinition Height="25"/>
+					<RowDefinition Height="25"/>
+				</Grid.RowDefinitions>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="50*"/>
+					<ColumnDefinition Width="75"/>
+					<ColumnDefinition Width="45*"/>
+					<ColumnDefinition Width="62*"/>
+					<ColumnDefinition Width="40"/>
+					<ColumnDefinition Width="50*"/>
+				</Grid.ColumnDefinitions>
+				<Label 
+					Content="Action"  
+					Margin="5,0,0,0"
+					Grid.Row="0" Grid.Column="1"/>
+				<Label 
+					Content="Mode"
+					Margin="1,0,0,0"
+					Grid.Row="0" Grid.Column="2"/>
+				<Label 
+					Content="Range"  
+					Margin="5,0,0,0"
+					Grid.Row="0" Grid.Column="3"/>
+				<Label 
+					Content="Limit(空白=default)" 
+					FontSize="9"
+					Grid.Row="0" Grid.Column="4"
+					Grid.ColumnSpan="2"/>
+				<Label 
+					Content="電源1" 
+					IsEnabled="{Binding SourceConfig.SourceFunc1Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+					Margin="5,0,0,0"
+					Grid.Row="1" Grid.Column="0"/>
+				<ComboBox  
+					ItemsSource="{Binding Resources.FuncItems}" 
+					DisplayMemberPath="Name" 
+					IsReadOnly="True"
+					SelectedIndex="{Binding SourceConfig.SourceFunc1Index, Mode=TwoWay, FallbackValue=0}"
+					Width="75"
+					Grid.Row="1" Grid.Column="1"/>
+				<ComboBox 
+					ItemsSource="{Binding Resources.ModeItems}"
+					DisplayMemberPath="Name" 
+					IsReadOnly="True"
+					SelectedIndex="{Binding SourceConfig.SourceMode1Index, Mode=TwoWay, FallbackValue=0}"
+					IsEnabled="{Binding SourceConfig.SourceFunc1Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+					Width="40"
+					Grid.Row="1" Grid.Column="2"/>
+				<ComboBox
+					ItemsSource="{Binding Resources.SourceRangeItems}" 
+					DisplayMemberPath="Name" 
+					IsReadOnly="True"
+					SelectedIndex="{Binding SourceConfig.SourceRang1Index, Mode=TwoWay, FallbackValue=0}"
+					IsEnabled="{Binding SourceConfig.SourceFunc1Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+					Width="60"
+					Grid.Row="1" Grid.Column="3"/>
+				<TextBox 
+					Text="{Binding SourceConfig.SourceLimit1, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+					IsEnabled="{Binding SourceConfig.SourceFunc1Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+					Grid.Row="1" Grid.Column="4"/>
+				<ComboBox
+					ItemsSource="{Binding Resources.SourceLimitItems}" 
+					DisplayMemberPath="Name" 
+					IsReadOnly="True"
+					SelectedIndex="{Binding SourceConfig.SourceLimit1Index, Mode=TwoWay, FallbackValue=0}"
+					IsEnabled="{Binding SourceConfig.SourceFunc1Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+					Width="45"
+					Grid.Row="1" Grid.Column="5"/>
+				<Label 
+					Content="電源2" 
+					IsEnabled="{Binding SourceConfig.SourceFunc2Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+					Margin="5,0,0,0"
+					Grid.Row="2" Grid.Column="0"/>
+				<ComboBox 
+					ItemsSource="{Binding Resources.FuncItems}" 
+					DisplayMemberPath="Name"
+					IsReadOnly="True"
+					SelectedIndex="{Binding SourceConfig.SourceFunc2Index, Mode=TwoWay, FallbackValue=0}"
+					Width="75"
+					Grid.Row="2" Grid.Column="1"/>
+				<ComboBox 
+					ItemsSource="{Binding Resources.ModeItems}"
+					DisplayMemberPath="Name" 
+					IsReadOnly="True"
+					SelectedIndex="{Binding SourceConfig.SourceMode2Index, Mode=TwoWay, FallbackValue=0}"
+					IsEnabled="{Binding SourceConfig.SourceFunc2Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+					Width="40"
+					Grid.Row="2" Grid.Column="2"/>
+				<ComboBox
+					ItemsSource="{Binding Resources.SourceRangeItems}"
+					DisplayMemberPath="Name" 
+					IsReadOnly="True"
+					SelectedIndex="{Binding SourceConfig.SourceRang2Index, Mode=TwoWay, FallbackValue=0}"
+					IsEnabled="{Binding SourceConfig.SourceFunc2Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+					Width="60"
+					Grid.Row="2" Grid.Column="3"/>
+				<TextBox 
+					Text="{Binding SourceConfig.SourceLimit2, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+					IsEnabled="{Binding SourceConfig.SourceFunc2Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+					Grid.Row="2" Grid.Column="4"/>
+				<ComboBox
+					ItemsSource="{Binding Resources.SourceLimitItems}" 
+					DisplayMemberPath="Name" 
+					IsReadOnly="True"
+					SelectedIndex="{Binding SourceConfig.SourceLimit2Index, Mode=TwoWay, FallbackValue=0}"
+					IsEnabled="{Binding SourceConfig.SourceFunc2Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+					Width="45"
+					Grid.Row="2" Grid.Column="5"/>
+				<Label 
+					Content="電源3" 
+					IsEnabled="{Binding SourceConfig.SourceFunc3Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+					Margin="5,0,0,0"
+					Grid.Row="3" Grid.Column="0"/>
+				<ComboBox 
+					ItemsSource="{Binding Resources.FuncItems}" 
+					DisplayMemberPath="Name" 
+					IsReadOnly="True"
+					SelectedIndex="{Binding SourceConfig.SourceFunc3Index, Mode=TwoWay, FallbackValue=0}"
+					Width="75"
+					Grid.Row="3" Grid.Column="1"/>
+				<ComboBox 
+					ItemsSource="{Binding Resources.ModeItems}"
+					DisplayMemberPath="Name"
+					IsReadOnly="True"
+					SelectedIndex="{Binding SourceConfig.SourceMode3Index, Mode=TwoWay, FallbackValue=0}"
+					IsEnabled="{Binding SourceConfig.SourceFunc3Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+					Width="40"
+					Grid.Row="3" Grid.Column="2"/>
+				<ComboBox
+					ItemsSource="{Binding Resources.SourceRangeItems}"
+					DisplayMemberPath="Name" 
+					IsReadOnly="True"
+					SelectedIndex="{Binding SourceConfig.SourceRang3Index, Mode=TwoWay, FallbackValue=0}"
+					IsEnabled="{Binding SourceConfig.SourceFunc3Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+					Width="60"
+					Grid.Row="3" Grid.Column="3"/>
+				<TextBox 
+					Text="{Binding SourceConfig.SourceLimit3, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+					IsEnabled="{Binding SourceConfig.SourceFunc3Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+					Grid.Row="3" Grid.Column="4"/>
+				<ComboBox
+					ItemsSource="{Binding Resources.SourceLimitItems}" 
+					DisplayMemberPath="Name" 
+					IsReadOnly="True"
+					SelectedIndex="{Binding SourceConfig.SourceLimit3Index, Mode=TwoWay, FallbackValue=0}"
+					IsEnabled="{Binding SourceConfig.SourceFunc3Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+					Width="45"
+					Grid.Row="3" Grid.Column="5"/>
+				<Label 
+					Content="電源4"
+					IsEnabled="{Binding SourceConfig.SourceFunc4Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+					Margin="5,0,0,0"
+					Grid.Row="4" Grid.Column="0"/>
+				<ComboBox
+					ItemsSource="{Binding Resources.FuncItems}" 
+					DisplayMemberPath="Name"
+					IsReadOnly="True"
+					SelectedIndex="{Binding SourceConfig.SourceFunc4Index, Mode=TwoWay, FallbackValue=0}"
+					Width="75"
+					Grid.Row="4" Grid.Column="1"/>
+				<ComboBox 
+					ItemsSource="{Binding Resources.ModeItems}"
+					DisplayMemberPath="Name" 
+					IsReadOnly="True"
+					SelectedIndex="{Binding SourceConfig.SourceMode4Index, Mode=TwoWay, FallbackValue=0}"
+					IsEnabled="{Binding SourceConfig.SourceFunc4Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+					Width="40"
+					Grid.Row="4" Grid.Column="2"/>
+				<ComboBox
+					ItemsSource="{Binding Resources.SourceRangeItems}"
+					DisplayMemberPath="Name"
+					IsReadOnly="True"
+					SelectedIndex="{Binding SourceConfig.SourceRang4Index, Mode=TwoWay, FallbackValue=0}"
+					IsEnabled="{Binding SourceConfig.SourceFunc4Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+					Width="60"
+					Grid.Row="4" Grid.Column="3"/>
+				<TextBox 
+					Text="{Binding SourceConfig.SourceLimit4, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+					IsEnabled="{Binding SourceConfig.SourceFunc4Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+					Grid.Row="4" Grid.Column="4"/>
+				<ComboBox
+					ItemsSource="{Binding Resources.SourceLimitItems}"  
+					DisplayMemberPath="Name" 
+					IsReadOnly="True"
+					SelectedIndex="{Binding SourceConfig.SourceLimit4Index, Mode=TwoWay, FallbackValue=0}"
+					IsEnabled="{Binding SourceConfig.SourceFunc4Index, Converter={StaticResource SourceFuncIndexToEnabledConverter}}"
+					Width="45"
+					Grid.Row="4" Grid.Column="5" Cursor=""/>
+			</Grid>
+		</GroupBox>
+	</Grid>
+</UserControl>

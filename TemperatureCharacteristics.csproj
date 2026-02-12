@@ -1,0 +1,142 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <!-- デフォルトのアセンブリ情報を無効化 -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <!-- デフォルトのアセンブリ名を設定 -->
+    <AssemblyName>TemperatureCharacteristics</AssemblyName>
+    <PlatformTarget>x64</PlatformTarget>
+    <Platforms>AnyCPU;x64</Platforms>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="InputCheck\ErrCheck.cs" />
+    <Compile Remove="Utility.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Properties\ftd2xx.dll" />
+    <None Remove="Services\Serviceはアプリケーションの処理フローを管理.txt" />
+    <None Remove="ViewModels\ViewModelはUIとデータバインディングの橋渡し.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FTDI.FTD2XX_NET" Version="1.3.3" />
+    <PackageReference Include="System.Management" Version="9.0.10" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="9.0.10" />
+    <PackageReference Include="The.Microsoft.Expression.Interactions" Version="4.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Ivi.Visa.Interop">
+      <HintPath>..\dll\Ivi.Visa.Interop.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Properties\Settings.Designer.cs">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <!-- presets.jsonの属性変更が失敗するので出力ディレクトリの Resources\Data フォルダを削除 -->
+  <Target Name="CleanOutputDataDirectory" BeforeTargets="BeforeBuild">
+    <RemoveDir Directories="$(OutputPath)\Resources\Data" Condition="Exists('$(OutputPath)\Resources\Data')" />
+    <Message Text="Deleted output directory: $(OutputPath)\Resources\Data" Importance="High" />
+  </Target>
+
+  <!-- 出力ディレクトリの Resources\Data フォルダを作成 -->
+  <Target Name="EnsureOutputDirectory" AfterTargets="CleanOutputDataDirectory" BeforeTargets="RemoveReadOnlyBeforeCopy">
+    <MakeDir Directories="$(OutputPath)\Resources\Data" Condition="!Exists('$(OutputPath)\Resources\Data')" />
+    <Message Text="Ensured output directory: $(OutputPath)\Resources\Data" Importance="High" />
+  </Target>
+  
+  <ItemGroup>
+    <None Update="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <None Update="Resources\Data\presets.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  
+  <!--Preset.jsonを読み取り専用に変更-->
+  <Target Name="SetPresetsReadOnly" AfterTargets="AfterBuild">
+    <Exec Command="attrib +r &quot;$(TargetDir)Resources\Data\presets.json&quot;" />
+  </Target>
+
+  <ItemGroup>
+    <Folder Include="Resources\Data\" />
+  </ItemGroup>
+
+  <!--以降バージョン情報管理の為追加-->
+  <Target Name="GenerateVersionInfo" BeforeTargets="BeforeBuild">
+    <PropertyGroup>
+      <!--現在日時を取得-->
+      <BuildTime>$([System.DateTime]::Now.ToString("yyyyMMddHHmm"))</BuildTime>
+      <VersionPrefix Condition="'$(Configuration)' == 'Debug'">0</VersionPrefix>
+      <VersionPrefix Condition="'$(Configuration)' == 'Release'">1</VersionPrefix>
+      <VersionString>ver.$(VersionPrefix)$(BuildTime)</VersionString>
+      <VersionLine>public const string Version = "$(VersionString)"%3B</VersionLine>
+    </PropertyGroup>
+    <!-- 読み取り専用属性を解除 -->
+    <Exec Command="attrib -r VersionInfo.cs" ContinueOnError="true" />
+    <!--一度VersionInfo.cs削除-->
+    <Delete Files="VersionInfo.cs" ContinueOnError="true" />
+
+    <ItemGroup>
+      <VersionCodeLines Include="//****************************************************************************" />
+      <VersionCodeLines Include="//説明" />
+      <VersionCodeLines Include="// 本ファイルは読み取り専用" />
+      <VersionCodeLines Include="// .csprojファイルでVersionInfo.csを自動生成" />
+      <VersionCodeLines Include="// バージョン情報の形式はver.(debug=0 or Release=1)(yyyyMMddHHmm)" />
+      <VersionCodeLines Include="//****************************************************************************" />
+      <VersionCodeLines Include="namespace VerInfo {" />
+      <VersionCodeLines Include="    public static class VersionInfo {" />
+      <VersionCodeLines Include="$(VersionLine)" />
+      <VersionCodeLines Include="    }" />
+      <VersionCodeLines Include="}" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="VersionInfo.cs" Lines="@(VersionCodeLines)" Overwrite="true" />
+    <!-- 読み取り専用属性を設定 -->
+    <Exec Command="attrib +r VersionInfo.cs" ContinueOnError="true" />
+
+  </Target>
+</Project>

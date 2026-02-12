@@ -1,0 +1,38 @@
+﻿<UserControl x:Class="TemperatureCharacteristics.Views.Controls.OverlayControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+	<Grid>
+		<!-- 背景レイヤー（半透明＋Blur） -->
+		<Rectangle Fill="#80FFFFFF">
+			<Rectangle.Effect>
+				<BlurEffect Radius="6"/>
+			</Rectangle.Effect>
+		</Rectangle>
+
+		<!--メッセージ表示-->
+		<Border 
+			Background="White"
+            CornerRadius="12"
+            Padding="20"
+            Width="260"
+            Opacity="0.9"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Top"
+            BorderBrush="#DDDDDD"
+            BorderThickness="1"
+			Margin="0,120,0,0"
+            Effect="{StaticResource CardShadow}">
+			<StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+				<TextBlock 
+                    FontSize="14"
+                    FontWeight="Bold"
+                    HorizontalAlignment="Center"
+					Panel.ZIndex="999">
+					ID取得ボタンを押して<LineBreak/>
+					測定器を認識してください
+				</TextBlock>
+			</StackPanel>
+		</Border>
+	</Grid>
+</UserControl>

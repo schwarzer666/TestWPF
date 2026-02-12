@@ -1,0 +1,150 @@
+﻿<UserControl x:Class="TemperatureCharacteristics.Views.Controls.DmmSettingControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:TemperatureCharacteristics.Views.Controls">
+    <Grid>
+		<GroupBox 
+			Header="DMM設定" 
+			Background="SkyBlue">
+			<Grid>
+				<Grid.RowDefinitions>
+					<RowDefinition Height="25"/>
+					<RowDefinition Height="25"/>
+					<RowDefinition Height="25"/>
+					<RowDefinition Height="25"/>
+					<RowDefinition Height="25"/>
+					<RowDefinition Height="25"/>
+				</Grid.RowDefinitions>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="50"/>
+					<ColumnDefinition Width="55"/>
+					<ColumnDefinition Width="65"/>
+					<ColumnDefinition Width="40"/>
+					<ColumnDefinition Width="Auto"/>
+				</Grid.ColumnDefinitions>
+				<Label 
+					Content="Measure"  
+					Grid.Row="0" Grid.Column="1"/>
+				<Label 
+					Content="Range"  
+					Grid.Row="0" Grid.Column="2"/>
+				<Label 
+					Content="NPLC"  
+					Grid.Row="0" Grid.Column="3"/>
+				<Label 
+					Content="Disp.ON"  
+					Grid.Row="0" Grid.Column="4"/>
+				<Label 
+					Content="DMM1"
+					Grid.Row="1" Grid.Column="0"/>
+				<ComboBox 
+					ItemsSource="{Binding Resources.ModeItems}"
+					DisplayMemberPath="Name" 
+					IsReadOnly="True"
+					SelectedIndex="{Binding DmmConfig.MeasMode1Index, Mode=TwoWay, FallbackValue=0}" 
+					HorizontalAlignment="Left"
+					HorizontalContentAlignment="Center"
+					Width="45"
+					Grid.Row="1" Grid.Column="1"/>
+				<ComboBox 
+					ItemsSource="{Binding Resources.MeasureRangeItems}" 
+					DisplayMemberPath="Name" 
+					IsReadOnly="True"
+					SelectedIndex="{Binding DmmConfig.MeasRang1Index, Mode=TwoWay, FallbackValue=0}"
+					Grid.Row="1" Grid.Column="2"/>
+				<TextBox 
+					Text="{Binding DmmConfig.Meas1plc, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+					Grid.Row="1" Grid.Column="3"/>
+				<CheckBox 
+					IsChecked="{Binding DmmConfig.Meas1DispOn, Mode=TwoWay}"
+					Margin="15,0,0,0"
+					Grid.Row="1" Grid.Column="4"/>
+				<Label 
+					Content="DMM2"  
+					Grid.Row="2" Grid.Column="0"/>
+				<ComboBox 
+					ItemsSource="{Binding Resources.ModeItems}"
+					DisplayMemberPath="Name" 
+					IsReadOnly="True"
+					SelectedIndex="{Binding DmmConfig.MeasMode2Index, Mode=TwoWay, FallbackValue=0}"
+					HorizontalAlignment="Left"
+					HorizontalContentAlignment="Center"
+					Width="45"
+					Grid.Row="2" Grid.Column="1"/>
+				<ComboBox 
+					ItemsSource="{Binding Resources.MeasureRangeItems}" 
+					DisplayMemberPath="Name" 
+					IsReadOnly="True"
+					SelectedIndex="{Binding DmmConfig.MeasRang2Index, Mode=TwoWay, FallbackValue=0}"
+					Grid.Row="2" Grid.Column="2"/>
+				<TextBox 
+					Text="{Binding DmmConfig.Meas2plc, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+					Grid.Row="2" Grid.Column="3"/>
+				<CheckBox 
+					IsChecked="{Binding DmmConfig.Meas2DispOn, Mode=TwoWay}"
+					Margin="15,0,0,0"
+					Grid.Row="2" Grid.Column="4"/>
+				<Label 
+					Content="DMM3"  
+					Grid.Row="3" Grid.Column="0"/>
+				<ComboBox 
+					ItemsSource="{Binding Resources.ModeItems}"
+					DisplayMemberPath="Name" 
+					IsReadOnly="True"
+					SelectedIndex="{Binding DmmConfig.MeasMode3Index, Mode=TwoWay, FallbackValue=0}"
+					HorizontalAlignment="Left"
+					HorizontalContentAlignment="Center"
+					Width="45"
+					Grid.Row="3" Grid.Column="1"/>
+				<ComboBox
+					ItemsSource="{Binding Resources.MeasureRangeItems}" 
+					DisplayMemberPath="Name" 
+					IsReadOnly="True"
+					SelectedIndex="{Binding DmmConfig.MeasRang3Index, Mode=TwoWay, FallbackValue=0}"
+					Grid.Row="3" Grid.Column="2"/>
+				<TextBox
+					Text="{Binding DmmConfig.Meas3plc, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+					Grid.Row="3" Grid.Column="3"/>
+				<CheckBox
+					IsChecked="{Binding DmmConfig.Meas3DispOn, Mode=TwoWay}"
+					Margin="15,0,0,0"
+					Grid.Row="3" Grid.Column="4"/>
+				<Label 
+					Content="DMM4"  
+					Grid.Row="4" Grid.Column="0"/>
+				<ComboBox
+					ItemsSource="{Binding Resources.ModeItems}"
+					DisplayMemberPath="Name" 
+					IsReadOnly="True"
+					SelectedIndex="{Binding DmmConfig.MeasMode4Index, Mode=TwoWay, FallbackValue=0}"
+					HorizontalAlignment="Left"
+					HorizontalContentAlignment="Center"
+					Width="45"
+					Grid.Row="4" Grid.Column="1"/>
+				<ComboBox
+					ItemsSource="{Binding Resources.MeasureRangeItems}" 
+					DisplayMemberPath="Name" 
+					IsReadOnly="True"
+					SelectedIndex="{Binding DmmConfig.MeasRang4Index, Mode=TwoWay, FallbackValue=0}"
+					Grid.Row="4" Grid.Column="2"/>
+				<TextBox
+					Text="{Binding DmmConfig.Meas4plc, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+					Grid.Row="4" Grid.Column="3"/>
+				<CheckBox
+					IsChecked="{Binding DmmConfig.Meas4DispOn, Mode=TwoWay}"
+					Margin="15,0,0,0"
+					Grid.Row="4" Grid.Column="4"/>
+				<Label 
+					Content="TRIG"  
+					Grid.Row="5" Grid.Column="0"/>
+				<ComboBox 
+					ItemsSource="{Binding Resources.DmmTrigSourceItems}" 
+					DisplayMemberPath="Name" 
+					IsReadOnly="True"
+					SelectedIndex="{Binding DmmConfig.MeasTrigIndex, Mode=TwoWay, FallbackValue=0}"
+					Grid.Row="5" Grid.Column="1"
+					Grid.ColumnSpan="2"/>
+			</Grid>
+		</GroupBox>
+	</Grid>
+</UserControl>

@@ -1,0 +1,161 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+					xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+					xmlns:local="clr-namespace:TemperatureCharacteristics.ViewModels"
+					xmlns:models="clr-namespace:TemperatureCharacteristics.Models"
+					xmlns:controls="clr-namespace:TemperatureCharacteristics.Views.Controls">
+	<DataTemplate x:Key="DelayTabContentTemplate">
+		<Grid 
+			IsEnabled="{Binding IsTabContentEnabled}"
+			Background="#FFE5E5E5">
+			<Grid.Resources>
+				<!--TextBox, ComboBox, CheckBox, Button, Label, GroupBoxのStyleを定義-->
+				<ResourceDictionary>
+					<ResourceDictionary.MergedDictionaries>
+						<ResourceDictionary Source="/Resources/CommonResources.xaml"/>
+					</ResourceDictionary.MergedDictionaries>
+				</ResourceDictionary>
+			</Grid.Resources>
+			<!--Delay Tab内 14行×9列-->
+			<Grid.RowDefinitions>
+				<RowDefinition Height="30"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="Auto"/>
+			</Grid.RowDefinitions>
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="50*"/>
+				<ColumnDefinition Width="75"/>
+				<ColumnDefinition Width="45*"/>
+				<ColumnDefinition Width="62*"/>
+				<ColumnDefinition Width="40"/>
+				<ColumnDefinition Width="50*"/>
+				<ColumnDefinition Width="65"/>
+				<ColumnDefinition Width="40"/>
+				<ColumnDefinition Width="53*"/>
+			</Grid.ColumnDefinitions>
+			<!--測定対象設定-->
+			<CheckBox 
+				Content="測定" 
+				IsChecked="{Binding MeasureOn, Mode=TwoWay}"
+				Margin="2,0,0,0"
+				Grid.Row="0" Grid.Column="0"/>
+			<TextBox 
+				Text="{Binding ItemHeader, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+				Margin="2,5"
+				Width="65"
+				Grid.Row="0" Grid.Column="1"/>
+			
+			<!--電源設定-->
+			<controls:SourceSettingControl
+				SourceConfig="{Binding SourceConfig}"
+				Resources="{Binding Resources}"
+				Grid.Row="1" Grid.Column="0"
+				Grid.RowSpan="6" Grid.ColumnSpan="6"/>
+			
+			<!--Const設定-->
+			<controls:ConstSettingControl
+				ConstConfig="{Binding ConstConfig}"
+				Resources="{Binding Resources}"
+				Grid.Row="0" Grid.Column="6"
+				Grid.RowSpan="4" Grid.ColumnSpan="3"/>
+			
+			<!--OSC設定1-->
+			<controls:OscSettingVerticalControl
+				OscConfig="{Binding OscConfig}"
+				Resources="{Binding Resources}"
+				Header="OSC設定1(Vertical+Trig)"
+				SelectedTrigDirectionalIndex="{Binding TrigDirectionalIndex}"
+				Grid.Row="7" Grid.Column="0"
+				Grid.RowSpan="8" Grid.ColumnSpan="3"/>
+
+			<!--OSC設定2-->
+			<controls:OscSettingHorizontalControl
+				OscConfig="{Binding OscConfig}"
+				Resources="{Binding Resources}"
+				Grid.Row="7" Grid.Column="3"
+				Grid.RowSpan="3" Grid.ColumnSpan="3"/>
+			
+			<!--初期電圧設定-->
+			<controls:DetectReleaseControl
+				DetectReleaseConfig="{Binding DetectReleaseConfig}"
+				Resources="{Binding Resources}"
+				ShowAction="False"
+				Header="初期電圧設定"
+				Grid.Row="10" Grid.Column="3"
+				Grid.RowSpan="4" Grid.ColumnSpan="3"/>
+			
+			<!--PG設定-->
+			<controls:PulseGenSettingControl
+				PulseGenConfig="{Binding PulseGenConfig}"
+				Resources="{Binding Resources}"
+				SelectedTrigOutIndex="{Binding TrigOutIndex, Mode=TwoWay}"
+				ShowTrigOutComboBox="True"
+				ShowToolTip="False"
+				Header="PG設定"
+				Grid.Row="4" Grid.Column="6"
+				Grid.RowSpan="9" Grid.ColumnSpan="3"/>
+
+			<!--Measure設定-->
+			<GroupBox
+					Header="Measure設定(Delay)" 
+					Background="LightYellow"
+					Grid.Row="13" Grid.Column="6"
+					Grid.RowSpan="2" Grid.ColumnSpan="3">
+				<Grid>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="25"/>
+					</Grid.RowDefinitions>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="60"/>
+						<ColumnDefinition Width="45"/>
+						<ColumnDefinition Width="53*"/>
+					</Grid.ColumnDefinitions>
+					<Grid.ToolTip>
+						<ToolTip>
+							<TextBlock>
+								OSC設定1で選択した"TRIG"を起点に<LineBreak/>
+								どの"CH"の"立上がり立下り"時間までを測定したいか選択
+							</TextBlock>
+						</ToolTip>
+					</Grid.ToolTip>
+					<Label 
+							Content="Measure CH" 
+							FontSize="9"
+							Grid.Row="0" Grid.Column="0"/>
+					<ComboBox 
+							ItemsSource="{Binding Resources.MeasureSourceItems}"
+							DisplayMemberPath="Name" 
+							IsReadOnly="True"
+							SelectedIndex="{Binding DelayConfig.MeasureChIndex, Mode=TwoWay, FallbackValue=0}"
+							Width="47"
+							Grid.Row="0" Grid.Column="1"/>
+					<ComboBox 
+							ItemsSource="{Binding Resources.TrigDirectionalItems}"
+							DisplayMemberPath="Name" 
+							IsReadOnly="True"
+							SelectedIndex="{Binding DelayConfig.MeasureChDirectionalIndex, Mode=TwoWay, FallbackValue=0}"
+							Width="40"
+							Grid.Row="0" Grid.Column="2" Cursor=""/>
+				</Grid>
+			</GroupBox>
+			<!--Save,Load,プリセットボタン-->
+			<controls:SaveLoadPresetPanel
+				DataContext="{Binding DataContext.PresetVM, RelativeSource={RelativeSource AncestorType=Window}}"
+				TabViewModel="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Grid}}"
+				Grid.Row="15" Grid.Column="0" 
+				Grid.ColumnSpan="9" Panel.ZIndex="999"/>
+		</Grid>
+	</DataTemplate>
+</ResourceDictionary>
